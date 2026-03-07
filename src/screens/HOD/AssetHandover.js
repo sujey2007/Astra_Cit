@@ -4,19 +4,26 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  FlatList,
   SafeAreaView,
   Alert,
-  TextInput,
   ScrollView,
   KeyboardAvoidingView,
-  Platform
+  Platform,
+  ActivityIndicator
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { db } from '../../api/firebaseConfig';
-import { collection, onSnapshot, query, where, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { 
+  collection, 
+  onSnapshot, 
+  query, 
+  where, 
+  doc, 
+  updateDoc, 
+  addDoc, 
+  serverTimestamp 
+} from 'firebase/firestore';
 
-// CIT SPECIFIC LOCATIONS
 const CIT_LOCATIONS = {
   COE: [
     "KUKA Industrial Robotics COE",
@@ -59,40 +66,68 @@ export default function AssetHandover({ navigation }) {
   const [availableAssets, setAvailableAssets] = useState([]);
   const [selectedItem, setSelectedItem] = useState(null);
   const [assignedTo, setAssignedTo] = useState("");
-  const [activeCategory, setActiveCategory] = useState('COE'); // 'COE' | 'LABS' | 'CLASSROOMS'
+  const [activeCategory, setActiveCategory] = useState('COE');
   const [isLoading, setIsLoading] = useState(true);
+  const [isProcessing, setIsProcessing] = useState(false);
 
+  // Constant for audit trail
   const currentUser = "Dr. Sujey (HOD)";
+  const currentDept = "Computer Science & Engineering (CSE)";
 
   useEffect(() => {
+    // Sync with items that are physically with the HOD
     const q = query(
       collection(db, 'requisitions'),
       where("requestedBy", "==", currentUser),
       where("status", "in", ["Dispensed", "Received by Stores"])
     );
-    return onSnapshot(q, (snapshot) => {
+    
+    const unsubscribe = onSnapshot(q, (snapshot) => {
       setAvailableAssets(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       setIsLoading(false);
     });
+
+    return () => unsubscribe();
   }, []);
 
   const handleHandover = async () => {
     if (!assignedTo) return Alert.alert("Required", "Please select a specific location for allocation.");
+    
+    setIsProcessing(true);
     try {
-      await updateDoc(doc(db, 'requisitions', selectedItem.id), {
+      // 1. Update the original requisition status
+      const reqRef = doc(db, 'requisitions', selectedItem.id);
+      await updateDoc(reqRef, {
         status: "Allocated",
         assignedTo: assignedTo,
         allocatedAt: serverTimestamp()
       });
-      Alert.alert("Success", "Asset officially allocated to " + assignedTo);
+
+      // 2. LOG TO STORES: Create entry in distribution_history
+      // This is the data the Stores department will see in their 'Allocation History'
+      await addDoc(collection(db, 'distribution_history'), {
+        itemName: selectedItem.itemName,
+        quantity: selectedItem.quantity,
+        sourceHOD: currentUser,
+        sourceDepartment: currentDept,
+        destination: assignedTo,
+        timestamp: serverTimestamp(),
+        requisitionId: selectedItem.id,
+        category: activeCategory
+      });
+
+      Alert.alert("Success", `Asset officially allocated to ${assignedTo}. Records updated in Stores Log.`);
       setSelectedItem(null);
       setAssignedTo("");
-    } catch (e) { Alert.alert("Error", "Handover failed."); }
+    } catch (e) { 
+      Alert.alert("Error", "Handover failed. Please check your connection."); 
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* HEADER */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="chevron-back" size={24} color="#1E293B" />
@@ -101,12 +136,17 @@ export default function AssetHandover({ navigation }) {
         <View style={{ width: 24 }} />
       </View>
 
-      <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
+        style={{ flex: 1 }}
+      >
         <ScrollView contentContainerStyle={{ padding: 20 }} showsVerticalScrollIndicator={false}>
           
           <Text style={styles.label}>1. SELECT RECEIVED ASSET</Text>
           <View style={styles.listContainer}>
-            {availableAssets.length > 0 ? (
+            {isLoading ? (
+              <ActivityIndicator color="#2563EB" style={{ marginVertical: 20 }} />
+            ) : availableAssets.length > 0 ? (
               availableAssets.map((item) => (
                 <TouchableOpacity 
                   key={item.id}
@@ -130,7 +170,6 @@ export default function AssetHandover({ navigation }) {
             <View style={styles.formCard}>
               <Text style={styles.label}>2. ALLOCATE TO FACILITY</Text>
               
-              {/* CATEGORY TABS FOR EASY SELECTION */}
               <View style={styles.tabBar}>
                 {['COE', 'LABS', 'CLASSROOMS'].map((cat) => (
                   <TouchableOpacity 
@@ -143,7 +182,6 @@ export default function AssetHandover({ navigation }) {
                 ))}
               </View>
 
-              {/* LOCATION GRID SELECTION */}
               <View style={styles.locationGrid}>
                 {CIT_LOCATIONS[activeCategory].map((loc) => (
                   <TouchableOpacity 
@@ -156,8 +194,16 @@ export default function AssetHandover({ navigation }) {
                 ))}
               </View>
 
-              <TouchableOpacity style={styles.submitBtn} onPress={handleHandover}>
-                <Text style={styles.submitText}>COMPLETE ALLOCATION</Text>
+              <TouchableOpacity 
+                style={[styles.submitBtn, isProcessing && { opacity: 0.7 }]} 
+                onPress={handleHandover}
+                disabled={isProcessing}
+              >
+                {isProcessing ? (
+                  <ActivityIndicator color="white" />
+                ) : (
+                  <Text style={styles.submitText}>COMPLETE ALLOCATION</Text>
+                )}
               </TouchableOpacity>
             </View>
           )}
@@ -169,30 +215,69 @@ export default function AssetHandover({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFC' },
-  header: { flexDirection: 'row', justifyContent: 'space-between', padding: 20, backgroundColor: 'white', borderBottomWidth: 1, borderColor: '#E2E8F0', elevation: 2 },
+  header: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    padding: 20, 
+    backgroundColor: 'white', 
+    borderBottomWidth: 1, 
+    borderColor: '#E2E8F0', 
+    elevation: 2 
+  },
   headerTitle: { fontSize: 16, fontWeight: '800', color: '#0F172A' },
   label: { fontSize: 11, fontWeight: '800', color: '#64748B', marginBottom: 10, letterSpacing: 1, textTransform: 'uppercase' },
   listContainer: { marginBottom: 20 },
-  itemCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF', padding: 15, borderRadius: 16, marginBottom: 10, borderWidth: 1, borderColor: '#E2E8F0', elevation: 1 },
+  itemCard: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    backgroundColor: '#FFF', 
+    padding: 15, 
+    borderRadius: 16, 
+    marginBottom: 10, 
+    borderWidth: 1, 
+    borderColor: '#E2E8F0', 
+    elevation: 1 
+  },
   activeItem: { backgroundColor: '#2563EB', borderColor: '#2563EB' },
   itemName: { fontSize: 15, fontWeight: '700', color: '#1E293B' },
   itemSub: { fontSize: 12, color: '#64748B' },
   emptyText: { textAlign: 'center', color: '#94A3B8', marginTop: 10, fontStyle: 'italic' },
-  
-  formCard: { backgroundColor: '#FFF', padding: 20, borderRadius: 20, elevation: 5, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 10 },
-  
+  formCard: { 
+    backgroundColor: '#FFF', 
+    padding: 20, 
+    borderRadius: 20, 
+    elevation: 5, 
+    shadowColor: '#000', 
+    shadowOpacity: 0.1, 
+    shadowRadius: 10 
+  },
   tabBar: { flexDirection: 'row', backgroundColor: '#F1F5F9', borderRadius: 12, padding: 4, marginBottom: 15 },
   tab: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 10 },
   activeTab: { backgroundColor: '#FFF', elevation: 2 },
   tabText: { fontSize: 11, fontWeight: '800', color: '#64748B' },
   activeTabText: { color: '#2563EB' },
-
   locationGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20 },
-  locChip: { paddingHorizontal: 12, paddingVertical: 10, borderRadius: 10, borderWidth: 1, borderColor: '#E2E8F0', backgroundColor: '#F8FAFC' },
+  locChip: { 
+    paddingHorizontal: 12, 
+    paddingVertical: 10, 
+    borderRadius: 10, 
+    borderWidth: 1, 
+    borderColor: '#E2E8F0', 
+    backgroundColor: '#F8FAFC' 
+  },
   activeLocChip: { backgroundColor: '#EFF6FF', borderColor: '#2563EB' },
   locChipText: { fontSize: 12, color: '#475569', fontWeight: '600' },
   activeLocChipText: { color: '#2563EB', fontWeight: '700' },
-
-  submitBtn: { backgroundColor: '#2563EB', padding: 18, borderRadius: 14, alignItems: 'center', shadowColor: '#2563EB', shadowOpacity: 0.3, shadowRadius: 10, elevation: 5 },
+  submitBtn: { 
+    backgroundColor: '#2563EB', 
+    padding: 18, 
+    borderRadius: 14, 
+    alignItems: 'center', 
+    shadowColor: '#2563EB', 
+    shadowOpacity: 0.3, 
+    shadowRadius: 10, 
+    elevation: 5 
+  },
   submitText: { color: 'white', fontWeight: '800', fontSize: 14, letterSpacing: 0.5 }
 });

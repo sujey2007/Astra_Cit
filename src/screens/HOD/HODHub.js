@@ -19,6 +19,7 @@ const { width } = Dimensions.get('window');
 export default function HODHub({ navigation }) {
   const [pendingCount, setPendingCount] = useState(0);
   const [handoverCount, setHandoverCount] = useState(0);
+  const [damageCount, setDamageCount] = useState(0); // Track reported damages
   const currentUser = "Dr. Sujey (HOD)";
   
   // Animation Refs
@@ -40,7 +41,11 @@ export default function HODHub({ navigation }) {
     const qHandover = query(requisitionsRef, where("requestedBy", "==", currentUser), where("status", "in", ["Dispensed", "Received by Stores"]));
     const unsubHandover = onSnapshot(qHandover, (snapshot) => setHandoverCount(snapshot.docs.length));
 
-    return () => { unsubPending(); unsubHandover(); };
+    // Listen for reported damages
+    const qDamage = query(collection(db, 'disposal_requests'), where("reportedBy", "==", currentUser), where("status", "==", "Reported"));
+    const unsubDamage = onSnapshot(qDamage, (snapshot) => setDamageCount(snapshot.docs.length));
+
+    return () => { unsubPending(); unsubHandover(); unsubDamage(); };
   }, []);
 
   return (
@@ -81,8 +86,8 @@ export default function HODHub({ navigation }) {
               </View>
               <View style={[styles.statDivider, { backgroundColor: '#E2E8F0' }]} />
               <View style={styles.statItem}>
-                <Text style={[styles.statNumber, { color: '#6366F1' }]}>12</Text>
-                <Text style={styles.statLabel}>Total Assets</Text>
+                <Text style={[styles.statNumber, { color: '#EF4444' }]}>{damageCount}</Text>
+                <Text style={styles.statLabel}>Damaged</Text>
               </View>
             </View>
             
@@ -132,7 +137,7 @@ export default function HODHub({ navigation }) {
 
             {/* CARD 3: ASSET HANDOVER */}
             <TouchableOpacity 
-              style={[styles.featureCard, { width: '100%', flexDirection: 'row', alignItems: 'center' }]} 
+              style={styles.featureCard} 
               onPress={() => navigation.navigate('AssetHandover')}
               activeOpacity={0.7}
             >
@@ -142,11 +147,21 @@ export default function HODHub({ navigation }) {
                   <View style={[styles.badge, { backgroundColor: '#EA580C' }]}><Text style={styles.badgeText}>{handoverCount}</Text></View>
                 )}
               </View>
-              <View style={{ marginLeft: 15, flex: 1 }}>
-                <Text style={styles.cardTitle}>Asset Handover</Text>
-                <Text style={styles.cardDesc}>Allocate dispensed items to classrooms.</Text>
+              <Text style={styles.cardTitle}>Asset Handover</Text>
+              <Text style={styles.cardDesc}>Allocate dispensed items to classrooms.</Text>
+            </TouchableOpacity>
+
+            {/* CARD 4: REPORT DAMAGE */}
+            <TouchableOpacity 
+              style={styles.featureCard} 
+              onPress={() => navigation.navigate('ReportDamage')}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.iconBox, { backgroundColor: '#FEF2F2' }]}>
+                <Ionicons name="alert-circle-outline" size={28} color="#EF4444" />
               </View>
-              <Ionicons name="chevron-forward" size={20} color="#CBD5E1" />
+              <Text style={[styles.cardTitle, { color: '#991B1B' }]}>Report Damage</Text>
+              <Text style={styles.cardDesc}>File report for damaged lab equipment.</Text>
             </TouchableOpacity>
           </View>
 
