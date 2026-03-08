@@ -1,0 +1,208 @@
+import React, { useState, useEffect } from 'react';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  SafeAreaView, 
+  TouchableOpacity, 
+  ScrollView, 
+  Image, 
+  Dimensions,
+  ActivityIndicator 
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { BarChart } from 'react-native-chart-kit'; // Logic synced with SystemAnalytics
+import { db } from '../../api/firebaseConfig';
+import { collection, onSnapshot, query, where } from 'firebase/firestore';
+
+const screenWidth = Dimensions.get("window").width;
+const COLORS = ['#1D4ED8', '#10B981', '#F59E0B']; // Branding Colors
+
+export default function AccountsHub({ navigation }) {
+  const [pendingPayments, setPendingPayments] = useState(0);
+  const [totalExpenses, setTotalExpenses] = useState(0);
+  const [loading, setLoading] = useState(true);
+  
+  // State for Chart Data (Logic synced with SystemAnalytics)
+  const [chartData, setChartData] = useState({
+    labels: ["Jan", "Feb", "Mar"],
+    datasets: [{ 
+      data: [145, 198, 0], // Values in Thousands (k)
+      colors: [
+        (opacity = 1) => COLORS[0],
+        (opacity = 1) => COLORS[1],
+        (opacity = 1) => COLORS[2],
+      ]
+    }]
+  });
+
+  useEffect(() => {
+    // 1. Fetch Pending Wage Approvals
+    const qWages = query(collection(db, "construction_attendance"), where("paymentStatus", "==", "Pending"));
+    const unsubWages = onSnapshot(qWages, (snap) => setPendingPayments(snap.docs.length));
+
+    // 2. Fetch Total Spend & Live Ledger Data
+    const qLedger = collection(db, "institutional_ledger");
+    const unsubLedger = onSnapshot(qLedger, (snap) => {
+      const docs = snap.docs.map(doc => doc.data());
+      
+      // Sanitized Numerical Calculation
+      const liveTotal = docs.reduce((acc, data) => acc + (parseFloat(data.amount) || 0), 0);
+      const approxInventoryValue = 330000; 
+      setTotalExpenses(liveTotal + approxInventoryValue);
+
+      // Extract March Spend for the Chart
+      const marchSpend = docs.filter(data => {
+        const date = data.timestamp?.toDate();
+        return date && date.getMonth() === 2 && date.getFullYear() === 2026;
+      }).reduce((acc, data) => acc + (parseFloat(data.amount) || 0), 0);
+
+      // Sync Chart State (Logic similar to SystemAnalytics)
+      const marchTotalK = (marchSpend + 210000) / 1000; // Convert to 'k' for bar scale
+      setChartData({
+        labels: ["Jan", "Feb", "Mar"],
+        datasets: [{ 
+          data: [145, 198, marchTotalK],
+          colors: [
+            (opacity = 1) => COLORS[0],
+            (opacity = 1) => COLORS[1],
+            (opacity = 1) => COLORS[2],
+          ]
+        }]
+      });
+      setLoading(false);
+    });
+
+    return () => {
+      unsubWages();
+      unsubLedger();
+    };
+  }, []);
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <View style={styles.brandContainer}>
+          <Image 
+            source={{ uri: 'https://images.shiksha.com/mediadata/images/1583389585phpP9W1tB_m.jpg' }} 
+            style={styles.citLogo} 
+          />
+          <View>
+            <Text style={styles.title}>ACCOUNTS HUB</Text>
+            <Text style={styles.subtitle}>Institutional Finance Ledger</Text>
+          </View>
+        </View>
+        <TouchableOpacity style={styles.logoutBtn} onPress={() => navigation.replace('Login')}>
+          <Ionicons name="power" size={20} color="#D32F2F" />
+        </TouchableOpacity>
+      </View>
+
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        {/* FINANCIAL SUMMARY BAR */}
+        <View style={styles.overviewBar}>
+          <View style={styles.statBox}>
+            <Text style={styles.statValue}>₹{(totalExpenses / 100000).toFixed(1)}L</Text>
+            <Text style={styles.statLabel}>INST. VALUE</Text>
+          </View>
+          <View style={[styles.statBox, styles.borderLeft]}>
+            <Text style={[styles.statValue, { color: '#EA580C' }]}>{pendingPayments}</Text>
+            <Text style={styles.statLabel}>PENDING WAGES</Text>
+          </View>
+          <View style={[styles.statBox, styles.borderLeft]}>
+            <Text style={[styles.statValue, { color: '#059669' }]}>92%</Text>
+            <Text style={styles.statLabel}>BUDGET HEALTH</Text>
+          </View>
+        </View>
+
+        {/* MONTHLY SPENDING CHART - Integration from SystemAnalytics */}
+        <Text style={styles.sectionLabel}>Spending Growth (in ₹k)</Text>
+        <View style={styles.chartWrapper}>
+          {loading ? (
+            <ActivityIndicator size="large" color="#1D4ED8" />
+          ) : (
+            <BarChart
+              data={chartData}
+              width={screenWidth - 70}
+              height={180}
+              fromZero
+              flatColor={true}
+              withCustomBarColorFromData={true}
+              chartConfig={{
+                backgroundGradientFrom: "#FFF",
+                backgroundGradientTo: "#FFF",
+                color: (opacity = 1) => `rgba(29, 78, 216, ${opacity})`,
+                labelColor: (opacity = 1) => `rgba(100, 116, 139, ${opacity})`,
+                barPercentage: 0.6,
+                decimalPlaces: 0,
+              }}
+              style={styles.chart}
+            />
+          )}
+        </View>
+
+        <Text style={styles.sectionLabel}>FINANCIAL OPERATIONS</Text>
+        
+        <View style={styles.grid}>
+          <TouchableOpacity style={styles.featureCard} onPress={() => navigation.navigate('PayrollApproval')}>
+            <View style={[styles.iconBox, { backgroundColor: '#DCFCE7' }]}>
+              <Ionicons name="people" size={32} color="#166534" />
+            </View>
+            <Text style={styles.cardTitle}>Payroll</Text>
+            <Text style={styles.cardSub}>Approve site wages</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.featureCard} onPress={() => navigation.navigate('PayPurchaseOrder')}>
+            <View style={[styles.iconBox, { backgroundColor: '#DBEAFE' }]}>
+              <Ionicons name="card" size={32} color="#1E40AF" />
+            </View>
+            <Text style={styles.cardTitle}>Settlements</Text>
+            <Text style={styles.cardSub}>Secure PO Gateway</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.featureCard} onPress={() => navigation.navigate('BudgetTracker')}>
+            <View style={[styles.iconBox, { backgroundColor: '#FEF3C7' }]}>
+              <Ionicons name="analytics" size={32} color="#92400E" />
+            </View>
+            <Text style={styles.cardTitle}>Budgets</Text>
+            <Text style={styles.cardSub}>Dept allocations</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.featureCard} onPress={() => navigation.navigate('TransactionLedger')}>
+            <View style={[styles.iconBox, { backgroundColor: '#F1F5F9' }]}>
+              <Ionicons name="receipt" size={32} color="#475569" />
+            </View>
+            <Text style={styles.cardTitle}>Ledger</Text>
+            <Text style={styles.cardSub}>Full audit trail</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#F8FAFC' },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 20, backgroundColor: '#FFF', borderBottomWidth: 1, borderColor: '#E2E8F0', elevation: 4 },
+  brandContainer: { flexDirection: 'row', alignItems: 'center' },
+  citLogo: { width: 35, height: 35, marginRight: 10, borderRadius: 8 },
+  title: { fontSize: 16, fontWeight: '900', color: '#0F172A' },
+  subtitle: { fontSize: 10, color: '#64748B', fontWeight: '700' },
+  logoutBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#FEF2F2', justifyContent: 'center', alignItems: 'center' },
+  content: { padding: 20 },
+  overviewBar: { flexDirection: 'row', backgroundColor: '#FFF', borderRadius: 20, padding: 20, marginBottom: 25, elevation: 3, borderWidth: 1, borderColor: '#F1F5F9' },
+  statBox: { flex: 1, alignItems: 'center' },
+  borderLeft: { borderLeftWidth: 1, borderColor: '#F1F5F9' },
+  statValue: { fontSize: 20, fontWeight: '900', color: '#1D4ED8' },
+  statLabel: { fontSize: 8, fontWeight: '800', color: '#94A3B8', marginTop: 4, letterSpacing: 1 },
+  
+  // CHART STYLES (Synced from SystemAnalytics)
+  chartWrapper: { backgroundColor: '#FFF', padding: 15, borderRadius: 24, marginBottom: 25, borderWidth: 1, borderColor: '#E2E8F0', elevation: 2, alignItems: 'center' },
+  chart: { borderRadius: 16, marginTop: 10 },
+
+  sectionLabel: { fontSize: 11, fontWeight: '800', color: '#94A3B8', letterSpacing: 1, marginBottom: 15, textTransform: 'uppercase' },
+  grid: { flexDirection: 'row', justifyContent: 'space-between', flexWrap: 'wrap' },
+  featureCard: { width: '48%', backgroundColor: '#FFF', padding: 20, borderRadius: 24, elevation: 4, marginBottom: 16, borderWidth: 1, borderColor: '#F1F5F9', minHeight: 180 },
+  iconBox: { width: 56, height: 56, borderRadius: 18, justifyContent: 'center', alignItems: 'center', marginBottom: 15 },
+  cardTitle: { fontSize: 15, fontWeight: '800', color: '#1E293B' },
+  cardSub: { fontSize: 11, color: '#64748B', marginTop: 4, fontWeight: '500' }
+});

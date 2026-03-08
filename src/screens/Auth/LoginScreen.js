@@ -25,12 +25,13 @@ import { doc, getDoc } from 'firebase/firestore';
 const { width } = Dimensions.get('window');
 
 const ROLES = [
-{ id: "Procurement", label: "Purchase Officer" },
 { id: "Stores", label: "Stores Department" },
 { id: "HOD", label: "Department HOD" },
+{ id: "Procurement", label: "Purchase Officer" },
 { id: "Construction", label: "Construction Manager" },
 { id: "Auditor", label: "Internal Auditor" },
 { id: "Executive", label: "Executive Board" },
+{ id: "Accounts", label: "Accounts Department" },
 { id: "Admin", label: "System Admin" }
 ];
 

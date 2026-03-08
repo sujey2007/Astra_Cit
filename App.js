@@ -41,10 +41,18 @@ import LaborTracker from './src/screens/Construction/LaborTracker';
 import WorkDoneLog from './src/screens/Construction/WorkDoneLog'; 
 import ConstructionRequisition from './src/screens/Construction/ConstructionRequisition';
 import AttendanceHistory from './src/screens/Construction/AttendanceHistory';
-import ConsumptionLog from './src/screens/Construction/ConsumptionLog'; // NEW
-import ConstructionInventory from './src/screens/Construction/ConstructionInventory'; // NEW
+import ConsumptionLog from './src/screens/Construction/ConsumptionLog'; 
+import ConstructionInventory from './src/screens/Construction/ConstructionInventory';
 
-// 6. Other Hubs
+// 6. Accounts (Finance) Module
+import AccountsHub from './src/screens/Accounts/AccountsHub';
+import PayrollApproval from './src/screens/Accounts/PayrollApproval'; 
+import VendorPayments from './src/screens/Accounts/VendorPayments'; 
+import BudgetTracker from './src/screens/Accounts/BudgetTracker';
+import TransactionLedger from './src/screens/Accounts/TransactionLedger';
+import PayPurchaseOrder from './src/screens/Accounts/PayPurchaseOrder'; // NEW: Banking Gateway Integration
+
+// 7. Other Hubs
 import AuditorHub from './src/screens/Auditor/AuditorHub';
 import ExecutiveHub from './src/screens/Executive/ExecutiveHub';
 
@@ -96,6 +104,14 @@ export default function App() {
         <Stack.Screen name="AttendanceHistory" component={AttendanceHistory} />
         <Stack.Screen name="ConsumptionLog" component={ConsumptionLog} />
         <Stack.Screen name="ConstructionInventory" component={ConstructionInventory} />
+
+        {/* ACCOUNTS MODULE */}
+        <Stack.Screen name="AccountsHub" component={AccountsHub} />
+        <Stack.Screen name="PayrollApproval" component={PayrollApproval} />
+        <Stack.Screen name="VendorPayments" component={VendorPayments} />
+        <Stack.Screen name="BudgetTracker" component={BudgetTracker} />
+        <Stack.Screen name="TransactionLedger" component={TransactionLedger} />
+        <Stack.Screen name="PayPurchaseOrder" component={PayPurchaseOrder} />
 
         {/* AUDIT & EXECUTIVE */}
         <Stack.Screen name="AuditorHub" component={AuditorHub} />
