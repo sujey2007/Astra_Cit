@@ -28,7 +28,7 @@ const ROLES = [
 { id: "Procurement", label: "Purchase Officer" },
 { id: "Stores", label: "Stores Department" },
 { id: "HOD", label: "Department HOD" },
-{ id: "Construction", label: "Site Supervisor" },
+{ id: "Construction", label: "Construction Manager" },
 { id: "Auditor", label: "Internal Auditor" },
 { id: "Executive", label: "Executive Board" },
 { id: "Admin", label: "System Admin" }
