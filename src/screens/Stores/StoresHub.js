@@ -30,20 +30,20 @@ export default function StoresHub({ navigation }) {
   const LOW_STOCK_THRESHOLD = 20;
 
   useEffect(() => {
-    // Sync Material Request Badge Count
+    // 1. Sync Material Request Badge Count
     const qReq = query(collection(db, 'requisitions'), where("status", "==", "Pending"));
     const unsubReq = onSnapshot(qReq, (snapshot) => {
       setPendingCount(snapshot.docs.length);
     });
 
-    // Sync Live Inventory & Detect Low Stock
+    // 2. Sync Live Inventory & Detect Low Stock
     const unsubInv = onSnapshot(collection(db, 'inventory'), (snapshot) => {
       const allItems = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       const lowStock = allItems.filter(item => (item.stockCount || 0) < LOW_STOCK_THRESHOLD);
       setCriticalItems(lowStock);
     });
 
-    // Sync Damage Report Badge Count
+    // 3. Sync Damage Report Badge Count
     const qDisposal = query(collection(db, 'disposal_requests'), where("status", "==", "Reported"));
     const unsubDisposal = onSnapshot(qDisposal, (snapshot) => {
       setDisposalCount(snapshot.docs.length);
@@ -52,23 +52,22 @@ export default function StoresHub({ navigation }) {
     return () => { unsubReq(); unsubInv(); unsubDisposal(); };
   }, []);
 
-  // FIXED REORDER LOGIC: Matches Procurement Hub Filters
+  // REORDER LOGIC: Matches Procurement Hub Filters
   const handleReorder = async (item) => {
     setIsProcessing(true);
     try {
       await addDoc(collection(db, 'requisitions'), {
         itemName: item.itemName,
-        quantity: 50, // Standard reorder quantity
+        quantity: 50, 
         requestedBy: "Stores System (Auto-Alert)",
         department: "General Stores",
-        status: "PR Raised", // Matches Procurement Hub status filter
+        status: "PR Raised", 
         createdAt: serverTimestamp(),
         isUrgent: true
       });
-      Alert.alert("Success", `${item.itemName} has been forwarded to the Purchase Department.`);
+      Alert.alert("Success", `${item.itemName} reorder request sent to Purchase Dept.`);
     } catch (error) {
-      console.error("Firebase Error:", error);
-      Alert.alert("Error", "Failed to send reorder request. Check Firestore permissions.");
+      Alert.alert("Error", "Failed to send reorder request.");
     } finally {
       setIsProcessing(false);
     }
@@ -76,7 +75,7 @@ export default function StoresHub({ navigation }) {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* BRANDED HEADER WITH LOGO */}
+      {/* BRANDED HEADER */}
       <View style={styles.header}>
         <View style={styles.brandContainer}>
           <Image 
@@ -99,7 +98,7 @@ export default function StoresHub({ navigation }) {
         <Text style={styles.welcomeText}>Welcome, Stores Officer</Text>
         <Text style={styles.dateText}>{new Date().toLocaleDateString('en-GB', { dateStyle: 'full' })}</Text>
 
-        {/* CRITICAL STOCK DEPLETION BAR */}
+        {/* CRITICAL STOCK ALERTS */}
         {criticalItems.length > 0 && (
           <View style={styles.dangerZone}>
             <View style={styles.dangerHeader}>
@@ -139,7 +138,7 @@ export default function StoresHub({ navigation }) {
               )}
             </View>
             <Text style={styles.cardTitle}>Material Requests</Text>
-            <Text style={styles.cardDesc}>Review and process incoming department requisitions.</Text>
+            <Text style={styles.cardDesc}>Process incoming department requisitions.</Text>
           </TouchableOpacity>
 
           {/* 2. LIVE INVENTORY */}
@@ -148,37 +147,46 @@ export default function StoresHub({ navigation }) {
               <Ionicons name="cube" size={28} color="#15803D" />
             </View>
             <Text style={styles.cardTitle}>Live Inventory</Text>
-            <Text style={styles.cardDesc}>Monitor real-time stock levels and asset distribution.</Text>
+            <Text style={styles.cardDesc}>Real-time stock and asset distribution.</Text>
           </TouchableOpacity>
 
-          {/* 3. RAISE PR (MANUAL PURCHASE REQUEST) */}
-          <TouchableOpacity style={styles.featureCard} onPress={() => navigation.navigate('ManualPurchaseRequest')}>
-            <View style={[styles.iconBox, { backgroundColor: '#FFF7ED' }]}>
-              <Ionicons name="cart" size={28} color="#EA580C" />
+          {/* 3. ASSET TAGGING (CREATE NEW QR) */}
+          <TouchableOpacity style={styles.featureCard} onPress={() => navigation.navigate('GenerateQR')}>
+            <View style={[styles.iconBox, { backgroundColor: '#FDF2F8' }]}>
+              <Ionicons name="qr-code" size={28} color="#DB2777" />
             </View>
-            <Text style={styles.cardTitle}>Raise PR</Text>
-            <Text style={styles.cardDesc}>Manually request new stock procurement from vendors.</Text>
+            <Text style={styles.cardTitle}>Asset Tagging</Text>
+            <Text style={styles.cardDesc}>File new assets and generate QR for Auditor.</Text>
           </TouchableOpacity>
 
-          {/* 4. RECEIVE STOCK */}
+          {/* 4. VIEW ASSET TAGS (RECOVER EXISTING QR) */}
+          <TouchableOpacity style={styles.featureCard} onPress={() => navigation.navigate('ViewAssetTags')}>
+            <View style={[styles.iconBox, { backgroundColor: '#F1F5F9' }]}>
+              <Ionicons name="list" size={28} color="#6366F1" />
+            </View>
+            <Text style={styles.cardTitle}>View Asset Tags</Text>
+            <Text style={styles.cardDesc}>View and pull up existing filed asset QR codes.</Text>
+          </TouchableOpacity>
+
+          {/* 5. RECEIVE STOCK */}
           <TouchableOpacity style={styles.featureCard} onPress={() => navigation.navigate('ReceiveStock')}>
             <View style={[styles.iconBox, { backgroundColor: '#Fef9c3' }]}>
-              <Ionicons name="qr-code" size={28} color="#a16207" />
+              <Ionicons name="download-outline" size={28} color="#a16207" />
             </View>
             <Text style={styles.cardTitle}>Receive Stock</Text>
-            <Text style={styles.cardDesc}>Inward materials from vendors using QR/Barcode scanning.</Text>
+            <Text style={styles.cardDesc}>Inward materials from vendors using QR scanning.</Text>
           </TouchableOpacity>
 
-          {/* 5. ALLOCATION HISTORY */}
+          {/* 6. ALLOCATION HISTORY */}
           <TouchableOpacity style={styles.featureCard} onPress={() => navigation.navigate('AllocationHistory')}>
             <View style={[styles.iconBox, { backgroundColor: '#F1F5F9' }]}>
-              <Ionicons name="list-outline" size={28} color="#334155" />
+              <Ionicons name="share-social-outline" size={28} color="#334155" />
             </View>
             <Text style={styles.cardTitle}>Allocation History</Text>
-            <Text style={styles.cardDesc}>Track assets distributed by HODs to CIT labs/COEs.</Text>
+            <Text style={styles.cardDesc}>Track assets distributed to CIT labs/COEs.</Text>
           </TouchableOpacity>
 
-          {/* 6. DISPOSAL MANAGEMENT (DAMAGE REPORT) */}
+          {/* 7. DAMAGE REPORT */}
           <TouchableOpacity style={styles.featureCard} onPress={() => navigation.navigate('DisposalManagement')}>
             <View style={[styles.iconBox, { backgroundColor: '#FEF2F2' }]}>
               <Ionicons name="trash-outline" size={28} color="#EF4444" />
@@ -187,16 +195,16 @@ export default function StoresHub({ navigation }) {
               )}
             </View>
             <Text style={styles.cardTitle}>Damage Report</Text>
-            <Text style={styles.cardDesc}>Approve disposal or write-off for damaged CIT assets.</Text>
+            <Text style={styles.cardDesc}>Process write-offs for damaged CIT assets.</Text>
           </TouchableOpacity>
 
-          {/* 7. RECEIPT HISTORY */}
+          {/* 8. RECEIPT HISTORY */}
           <TouchableOpacity style={styles.featureCard} onPress={() => navigation.navigate('ReceiptHistory')}>
             <View style={[styles.iconBox, { backgroundColor: '#FFEDD5' }]}>
               <Ionicons name="receipt-outline" size={28} color="#C2410C" />
             </View>
             <Text style={styles.cardTitle}>Receipt History</Text>
-            <Text style={styles.cardDesc}>Review inward logs and captured digital bills.</Text>
+            <Text style={styles.cardDesc}>Review inward logs and digital bills.</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -215,10 +223,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF', 
     borderBottomWidth: 1, 
     borderBottomColor: '#E2E8F0', 
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 10
+    elevation: 4
   },
   brandContainer: { flexDirection: 'row', alignItems: 'center' },
   citLogo: { width: 40, height: 40, marginRight: 12 },
@@ -231,7 +236,7 @@ const styles = StyleSheet.create({
   welcomeText: { fontSize: 22, fontWeight: '800', color: '#1E293B' },
   dateText: { fontSize: 14, color: '#64748B', marginBottom: 20 },
   
-  dangerZone: { marginBottom: 30, backgroundColor: '#7F1D1D', borderRadius: 20, padding: 15, elevation: 8, shadowColor: '#B91C1C', shadowOpacity: 0.3, shadowRadius: 10 },
+  dangerZone: { marginBottom: 30, backgroundColor: '#7F1D1D', borderRadius: 20, padding: 15, elevation: 8 },
   dangerHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 15 },
   dangerTitle: { fontSize: 13, fontWeight: '900', color: '#FFF', letterSpacing: 1.5, marginLeft: 8 },
   alertScroll: { paddingBottom: 5 },

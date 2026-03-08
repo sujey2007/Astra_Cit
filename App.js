@@ -28,6 +28,8 @@ import AllocationHistory from './src/screens/Stores/AllocationHistory';
 import DisposalManagement from './src/screens/Stores/DisposalManagement'; 
 import ReceiptHistory from './src/screens/Stores/ReceiptHistory'; 
 import ManualPurchaseRequest from './src/screens/Stores/ManualPurchaseRequest';
+import GenerateQR from './src/screens/Stores/GenerateQR'; 
+import ViewAssetTags from './src/screens/Stores/ViewAssetTags'; // NEW: Added for QR Recovery
 
 // 4. Procurement (Purchase) Module
 import ProcurementHub from './src/screens/Procurement/ProcurementHub';
@@ -50,10 +52,13 @@ import PayrollApproval from './src/screens/Accounts/PayrollApproval';
 import VendorPayments from './src/screens/Accounts/VendorPayments'; 
 import BudgetTracker from './src/screens/Accounts/BudgetTracker';
 import TransactionLedger from './src/screens/Accounts/TransactionLedger';
-import PayPurchaseOrder from './src/screens/Accounts/PayPurchaseOrder'; // NEW: Banking Gateway Integration
+import PayPurchaseOrder from './src/screens/Accounts/PayPurchaseOrder'; 
 
-// 7. Other Hubs
+// 7. Auditor Module
 import AuditorHub from './src/screens/Auditor/AuditorHub';
+import AuditorScanner from './src/screens/Auditor/AuditorScanner';
+
+// 8. Executive Module
 import ExecutiveHub from './src/screens/Executive/ExecutiveHub';
 
 const Stack = createStackNavigator();
@@ -89,7 +94,9 @@ export default function App() {
         <Stack.Screen name="DisposalManagement" component={DisposalManagement} />
         <Stack.Screen name="ReceiptHistory" component={ReceiptHistory} />
         <Stack.Screen name="ManualPurchaseRequest" component={ManualPurchaseRequest} />
-        
+        <Stack.Screen name="GenerateQR" component={GenerateQR} />
+        <Stack.Screen name="ViewAssetTags" component={ViewAssetTags} />
+
         {/* PROCUREMENT (PURCHASE) MODULE */}
         <Stack.Screen name="ProcurementHub" component={ProcurementHub} />
         <Stack.Screen name="ViewPurchaseRequests" component={ViewPurchaseRequests} />
@@ -113,8 +120,11 @@ export default function App() {
         <Stack.Screen name="TransactionLedger" component={TransactionLedger} />
         <Stack.Screen name="PayPurchaseOrder" component={PayPurchaseOrder} />
 
-        {/* AUDIT & EXECUTIVE */}
+        {/* AUDIT MODULE */}
         <Stack.Screen name="AuditorHub" component={AuditorHub} />
+        <Stack.Screen name="AuditorScanner" component={AuditorScanner} />
+
+        {/* EXECUTIVE MODULE */}
         <Stack.Screen name="ExecutiveHub" component={ExecutiveHub} />
       </Stack.Navigator>
     </NavigationContainer>

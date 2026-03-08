@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>CIT | Asset Verification Portal</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    
+    <style>
+        * { box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            background: #f1f5f9; 
+            padding: 20px; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .card { 
+            background: white; 
+            padding: 30px; 
+            border-radius: 28px; 
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); 
+            width: 100%; 
+            max-width: 450px; 
+            border: 1px solid #e2e8f0;
+        }
+        .header { 
+            border-bottom: 3px solid #6366f1; 
+            padding-bottom: 20px; 
+            margin-bottom: 10px; 
+            text-align: center;
+        }
+        .cit-logo {
+            width: 65px;
+            height: 65px;
+            margin-bottom: 10px;
+            border-radius: 12px;
+        }
+        .logo-text {
+            font-weight: 900;
+            font-size: 22px;
+            color: #1e293b;
+            letter-spacing: -0.5px;
+            margin: 0;
+            text-transform: uppercase;
+        }
+        .label { 
+            color: #94a3b8; 
+            font-size: 10px; 
+            font-weight: 800; 
+            text-transform: uppercase; 
+            margin-top: 18px; 
+            letter-spacing: 0.1em;
+        }
+        .value { 
+            color: #0f172a; 
+            font-size: 17px; 
+            font-weight: 700; 
+            margin-top: 2px;
+        }
+        .status-badge { 
+            display: inline-flex; 
+            align-items: center;
+            padding: 6px 14px; 
+            border-radius: 99px; 
+            background: #dcfce7; 
+            color: #166534; 
+            font-size: 11px; 
+            font-weight: 800; 
+            margin-top: 12px;
+        }
+        .divider {
+            height: 1px;
+            background: #e2e8f0;
+            margin: 20px 0;
+            border: none;
+        }
+        .inventory-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px dashed #f1f5f9;
+        }
+        .item-name { font-weight: 600; color: #475569; font-size: 14px; }
+        .item-qty { font-weight: 800; color: #6366f1; font-size: 14px; }
+        .footer-text { font-size: 10px; color: #cbd5e1; font-weight: 700; margin-top: 30px; text-align: center; }
+        .error { color: #dc2626; text-align: center; font-weight: bold; padding: 20px; }
+        .loading { text-align: center; color: #6366f1; font-weight: bold; padding: 20px; }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <div class="header">
+            <img src="https://images.shiksha.com/mediadata/images/1583389585phpP9W1tB_m.jpg" class="cit-logo" alt="CIT Logo">
+            <h1 class="logo-text">CIT ASSET AUDIT</h1>
+            <p style="margin:5px 0; color:#64748b; font-size:11px; font-weight: 600;">Secure Institutional Verification</p>
+        </div>
+        
+        <div id="content">
+            <div class="loading">Authenticating with Ledger...</div>
+        </div>
+        
+        <div class="footer-text">
+            SECURED BY ASTRA SYSTEM &copy; 2026
+        </div>
+    </div>
+
+    <script>
+        // 1. FIREBASE CONFIG (Integrated from your AstraCIT credentials)
+        const firebaseConfig = {
+            apiKey: "AIzaSyB1iorJLLUZ6qm8ykCbnviuIhQqsyE6FVw",
+            authDomain: "astra-cit.firebaseapp.com",
+            databaseURL: "https://astra-cit-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "astra-cit",
+            storageBucket: "astra-cit.firebasestorage.app",
+            messagingSenderId: "400585780584",
+            appId: "1:400585780584:web:0b14e6998f88581c423add",
+            measurementId: "G-9F27Y7SL1S"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // 2. GET URL PARAMETERS
+        const urlParams = new URLSearchParams(window.location.search);
+        const assetId = urlParams.get('id');
+        const type = urlParams.get('type');
+
+        const contentDiv = document.getElementById('content');
+
+        if (!assetId) {
+            contentDiv.innerHTML = '<div class="error">INVALID QR CODE: ACCESS DENIED</div>';
+        } else {
+            // Check 'verified_assets' collection first (New Filing logic)
+            db.collection("verified_assets").doc(assetId).get().then((doc) => {
+                if (doc.exists) {
+                    const d = doc.data();
+                    let html = `
+                        <div class="label">Asset Identifier</div>
+                        <div class="value">${d.identifier}</div>
+                        
+                        ${d.roomName ? `<div class="label">Location Name</div><div class="value">${d.roomName}</div>` : ''}
+                        
+                        <div class="label">Classification</div>
+                        <div class="value">${d.type}</div>
+                        
+                        <div class="status-badge">✓ CIT OFFICIAL RECORD</div>
+                        <div class="divider"></div>
+                        <div style="font-size:11px; color:#94a3b8; font-weight:800; margin-bottom:10px;">INVENTORY BREAKDOWN</div>
+                    `;
+
+                    // Loop through the dynamic item list added by Stores Officer
+                    if (d.items && d.items.length > 0) {
+                        d.items.forEach(item => {
+                            html += `
+                                <div class="inventory-item">
+                                    <span class="item-name">${item.name}</span>
+                                    <span class="item-qty">${item.qty} Units</span>
+                                </div>
+                            `;
+                        });
+                    } else {
+                        html += '<p style="color:#94a3b8; font-size:12px;">No specific items filed.</p>';
+                    }
+                    contentDiv.innerHTML = html;
+                } else {
+                    // Fallback 1: Check by Room ID in inventory
+                    if(type === 'Room' || type === 'Lab' || type === 'Classroom') {
+                         return db.collection("inventory").where("location", "==", assetId).get();
+                    } else {
+                        // Fallback 2: Check inward_history for individual machines
+                        return db.collection("inward_history").doc(assetId).get();
+                    }
+                }
+            }).then((result) => {
+                if (!result) return;
+
+                if (result.docs) { // Handle inventory query result
+                    if (result.empty) {
+                        contentDiv.innerHTML = `<div class="label">Location</div><div class="value">${assetId}</div><div class="error" style="margin-top:10px;">No items currently assigned here.</div>`;
+                    } else {
+                        let html = `<div class="label">Audited Location</div><div class="value">${assetId}</div><div class="status-badge">✓ LIVE INVENTORY</div><div class="divider"></div>`;
+                        result.forEach((doc) => {
+                            const d = doc.data();
+                            html += `<div class="inventory-item"><span class="item-name">${d.itemName}</span><span class="item-qty">${d.quantity} ${d.unit}</span></div>`;
+                        });
+                        contentDiv.innerHTML = html;
+                    }
+                } else if (result.exists) { // Handle single document (inward_history)
+                    const fd = result.data();
+                    contentDiv.innerHTML = `
+                        <div class="label">Asset Identity</div>
+                        <div class="value">${fd.itemName}</div>
+                        <div class="label">Vendor Source</div>
+                        <div class="value">${fd.vendorName}</div>
+                        <div class="label">Verified Ledger Cost</div>
+                        <div class="value" style="color: #10b981; font-weight:900;">₹${parseFloat(fd.totalCost || 0).toLocaleString()}</div>
+                        <div class="status-badge">✓ PURCHASE RECORD VERIFIED</div>
+                    `;
+                } else {
+                    contentDiv.innerHTML = '<div class="error">UNREGISTERED ASSET: DATA NOT FOUND</div>';
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                contentDiv.innerHTML = '<div class="error">SYSTEM TIMEOUT: CHECK CONNECTION</div>';
+            });
+        }
+    </script>
+</body>
+</html>
