@@ -50,10 +50,7 @@ export default function ProcurementHub({ navigation }) {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <View style={styles.brandContainer}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-            <Ionicons name="arrow-back" size={24} color="#1E293B" />
-          </TouchableOpacity>
-          {/* UPDATED: Using local asset for mobile reliability */}
+          {/* REMOVED backBtn from here */}
           <Image 
             source={require('../../../assets/logo.png')} 
             style={styles.citLogo} 
@@ -111,7 +108,7 @@ export default function ProcurementHub({ navigation }) {
           </TouchableOpacity>
         </View>
 
-        {/* ADDED COPYRIGHT FOOTER */}
+        {/* COPYRIGHT FOOTER */}
         <View style={styles.footerContainer}>
             <Text style={styles.tagline}>Intelligent Resource & Ledger Management</Text>
             <Text style={styles.copyrightText}>
@@ -129,10 +126,10 @@ const styles = StyleSheet.create({
   header: { 
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', 
     paddingHorizontal: 20, paddingVertical: 15, backgroundColor: '#FFF', 
-    borderBottomWidth: 1, borderColor: '#E2E8F0', elevation: 4 
+    borderBottomWidth: 1, borderColor: '#E2E8F0', elevation: 4,
+    paddingTop: 50 // Ensures it clears phone status bars
   },
   brandContainer: { flexDirection: 'row', alignItems: 'center' },
-  backBtn: { marginRight: 12 },
   citLogo: { width: 38, height: 38, marginRight: 10 },
   title: { fontSize: 16, fontWeight: '900', color: '#0F172A', letterSpacing: 0.5 },
   subtitle: { fontSize: 10, color: '#64748B', fontWeight: '700', textTransform: 'uppercase' },
@@ -155,7 +152,6 @@ const styles = StyleSheet.create({
   cardTitle: { fontSize: 15, fontWeight: '800', color: '#1E293B' },
   cardSub: { fontSize: 11, color: '#64748B', marginTop: 4 },
 
-  // FOOTER STYLES
   footerContainer: {
     marginTop: 40,
     marginBottom: 20,

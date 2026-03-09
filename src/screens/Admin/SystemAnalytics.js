@@ -95,17 +95,17 @@ export default function SystemAnalytics({ navigation }) {
           <View style={styles.chartWrapper}>
             <BarChart
               data={data}
-              width={screenWidth - 40}
-              height={250}
+              width={screenWidth - 70} // ADJUSTED: Added padding for mobile responsiveness
+              height={220} // ADJUSTED: Slightly reduced height for better proportions
               fromZero
               flatColor={true}
-              withCustomBarColorFromData={true} // THE FIX: Enables multi-color bars
+              withCustomBarColorFromData={true} 
               chartConfig={{
                 backgroundGradientFrom: "#FFF",
                 backgroundGradientTo: "#FFF",
                 color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
                 labelColor: (opacity = 1) => `rgba(100, 116, 139, ${opacity})`,
-                barPercentage: 0.7,
+                barPercentage: 0.6, // ADJUSTED: Narrower bars for cleaner look
                 decimalPlaces: 0,
               }}
               style={styles.chart}
@@ -124,6 +124,15 @@ export default function SystemAnalytics({ navigation }) {
             </View>
           ))}
         </View>
+
+        {/* ADDED COPYRIGHT FOOTER */}
+        <View style={styles.footerContainer}>
+            <Text style={styles.tagline}>Intelligent Resource & Ledger Management</Text>
+            <Text style={styles.copyrightText}>
+                © 2026 AstraCIT • Developed by <Text style={{fontWeight: '900', color: '#6366F1'}}>CodeTitans</Text>
+            </Text>
+            <Text style={styles.rightsText}>All Rights Reserved</Text>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -131,17 +140,43 @@ export default function SystemAnalytics({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFC' },
-  header: { flexDirection: 'row', alignItems: 'center', padding: 20, backgroundColor: '#FFF', borderBottomWidth: 1, borderColor: '#E2E8F0' },
+  header: { flexDirection: 'row', alignItems: 'center', padding: 20, backgroundColor: '#FFF', borderBottomWidth: 1, borderColor: '#E2E8F0', paddingTop: 50 },
   backBtn: { padding: 8, backgroundColor: '#F1F5F9', borderRadius: 12, marginRight: 15 },
   headerTitle: { fontSize: 16, fontWeight: '900', color: '#0F172A', letterSpacing: 1 },
   content: { padding: 20 },
   sectionTitle: { fontSize: 22, fontWeight: '900', color: '#1E293B' },
   subtitle: { fontSize: 13, color: '#64748B', marginBottom: 25 },
-  chartWrapper: { backgroundColor: '#FFF', borderRadius: 24, padding: 15, elevation: 8, alignItems: 'center' },
+  chartWrapper: { backgroundColor: '#FFF', borderRadius: 24, padding: 15, elevation: 8, alignItems: 'center', borderWidth: 1, borderColor: '#E2E8F0' },
   chart: { borderRadius: 16 },
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginTop: 25 },
   statCard: { width: '48%', backgroundColor: '#FFF', padding: 20, borderRadius: 20, marginBottom: 15, elevation: 4, borderLeftWidth: 6 },
   statLabel: { fontSize: 10, fontWeight: '900', color: '#64748B', textTransform: 'uppercase' },
   statValue: { fontSize: 32, fontWeight: '900', marginTop: 5 },
-  statSub: { fontSize: 10, color: '#94A3B8', fontWeight: '700' }
+  statSub: { fontSize: 10, color: '#94A3B8', fontWeight: '700' },
+  
+  // FOOTER STYLES
+  footerContainer: {
+    marginTop: 30,
+    marginBottom: 20,
+    alignItems: 'center',
+  },
+  tagline: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#94A3B8',
+    letterSpacing: 1,
+    marginBottom: 5,
+    textTransform: 'uppercase'
+  },
+  copyrightText: {
+    fontSize: 11,
+    color: '#64748B',
+    fontWeight: '600'
+  },
+  rightsText: {
+    fontSize: 9,
+    color: '#94A3B8',
+    marginTop: 2,
+    fontWeight: '500'
+  }
 });

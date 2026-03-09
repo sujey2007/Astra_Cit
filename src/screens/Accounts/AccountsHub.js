@@ -77,7 +77,6 @@ export default function AccountsHub({ navigation }) {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <View style={styles.brandContainer}>
-          {/* FIXED: Using local asset logo for mobile reliability */}
           <Image 
             source={require('../../../assets/logo.png')} 
             style={styles.citLogo} 
@@ -110,7 +109,7 @@ export default function AccountsHub({ navigation }) {
           </View>
         </View>
 
-        {/* MONTHLY SPENDING CHART */}
+        {/* MONTHLY SPENDING CHART - OPTIMIZED */}
         <Text style={styles.sectionLabel}>Spending Growth (in ₹k)</Text>
         <View style={styles.chartWrapper}>
           {loading ? (
@@ -118,7 +117,7 @@ export default function AccountsHub({ navigation }) {
           ) : (
             <BarChart
               data={chartData}
-              width={screenWidth - 70}
+              width={screenWidth - 70} // OPTIMIZED: Responsively fits within card
               height={180}
               fromZero
               flatColor={true}
@@ -172,7 +171,6 @@ export default function AccountsHub({ navigation }) {
           </TouchableOpacity>
         </View>
 
-        {/* ADDED COPYRIGHT FOOTER */}
         <View style={styles.footerContainer}>
             <Text style={styles.tagline}>Intelligent Resource & Ledger Management</Text>
             <Text style={styles.copyrightText}>
@@ -187,7 +185,17 @@ export default function AccountsHub({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFC' },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 20, backgroundColor: '#FFF', borderBottomWidth: 1, borderColor: '#E2E8F0', elevation: 4 },
+  header: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'space-between', 
+    padding: 20, 
+    backgroundColor: '#FFF', 
+    borderBottomWidth: 1, 
+    borderColor: '#E2E8F0', 
+    elevation: 4,
+    paddingTop: 50 // Ensures it clears phone status bars
+  },
   brandContainer: { flexDirection: 'row', alignItems: 'center' },
   citLogo: { width: 35, height: 35, marginRight: 10, borderRadius: 8 },
   title: { fontSize: 16, fontWeight: '900', color: '#0F172A' },
@@ -199,7 +207,17 @@ const styles = StyleSheet.create({
   borderLeft: { borderLeftWidth: 1, borderColor: '#F1F5F9' },
   statValue: { fontSize: 20, fontWeight: '900', color: '#1D4ED8' },
   statLabel: { fontSize: 8, fontWeight: '800', color: '#94A3B8', marginTop: 4, letterSpacing: 1 },
-  chartWrapper: { backgroundColor: '#FFF', padding: 15, borderRadius: 24, marginBottom: 25, borderWidth: 1, borderColor: '#E2E8F0', elevation: 2, alignItems: 'center' },
+  chartWrapper: { 
+    backgroundColor: '#FFF', 
+    padding: 15, 
+    borderRadius: 24, 
+    marginBottom: 25, 
+    borderWidth: 1, 
+    borderColor: '#E2E8F0', 
+    elevation: 2, 
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
   chart: { borderRadius: 16, marginTop: 10 },
   sectionLabel: { fontSize: 11, fontWeight: '800', color: '#94A3B8', letterSpacing: 1, marginBottom: 15, textTransform: 'uppercase' },
   grid: { flexDirection: 'row', justifyContent: 'space-between', flexWrap: 'wrap' },
@@ -207,8 +225,6 @@ const styles = StyleSheet.create({
   iconBox: { width: 56, height: 56, borderRadius: 18, justifyContent: 'center', alignItems: 'center', marginBottom: 15 },
   cardTitle: { fontSize: 15, fontWeight: '800', color: '#1E293B' },
   cardSub: { fontSize: 11, color: '#64748B', marginTop: 4, fontWeight: '500' },
-  
-  // FOOTER STYLES
   footerContainer: {
     marginTop: 30,
     marginBottom: 20,
