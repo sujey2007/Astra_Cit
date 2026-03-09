@@ -23,6 +23,7 @@ const ROLES = [
   { id: "Construction", label: "Site Supervisor" },
   { id: "Auditor", label: "Internal Auditor" },
   { id: "Executive", label: "Executive Board" },
+  { id: "Accounts", label: "Accounts Officer" },
   { id: "Stores", label: "Stores Officer" }
 ];
 
