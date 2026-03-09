@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,8 +9,22 @@ import {
   Image
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+// Database Imports
+import { db } from '../../api/firebaseConfig';
+import { collection, onSnapshot, query, where } from 'firebase/firestore';
 
 export default function AdminHub({ navigation }) {
+  const [requestCount, setRequestCount] = useState(0);
+
+  useEffect(() => {
+    // Sync Pending Password Reset Requests for the Badge
+    const q = query(collection(db, "password_requests"), where("status", "==", "Pending"));
+    const unsub = onSnapshot(q, (snap) => {
+      setRequestCount(snap.docs.length);
+    });
+    return unsub;
+  }, []);
+
   const handleLogout = () => navigation.replace('Login');
 
   return (
@@ -20,8 +34,9 @@ export default function AdminHub({ navigation }) {
         {/* BRANDED HEADER */}
         <View style={styles.header}>
           <View style={styles.brandContainer}>
+             {/* FIXED: Using local asset for mobile reliability */}
              <Image 
-                source={{ uri: 'https://images.shiksha.com/mediadata/images/1583389585phpP9W1tB_m.jpg' }} 
+                source={require('../../../assets/logo.png')} 
                 style={styles.citLogo} 
                 resizeMode="contain"
              />
@@ -86,6 +101,32 @@ export default function AdminHub({ navigation }) {
               <Text style={styles.cardTitle}>Analytics</Text>
               <Text style={styles.cardSubtitle}>Real-time department usage</Text>
             </TouchableOpacity>
+
+            {/* NEW FEATURE 5: RECOVERY ALERTS */}
+            <TouchableOpacity 
+              style={[styles.featureCard, { borderColor: '#2563EB', borderWidth: 1 }]} 
+              onPress={() => navigation.navigate('PasswordRequests')}
+            >
+              <View style={[styles.iconContainer, { backgroundColor: '#EFF6FF' }]}>
+                <Ionicons name="notifications" size={28} color="#2563EB" />
+                {requestCount > 0 && (
+                  <View style={styles.badge}>
+                    <Text style={styles.badgeText}>{requestCount}</Text>
+                  </View>
+                )}
+              </View>
+              <Text style={styles.cardTitle}>Recovery Alerts</Text>
+              <Text style={styles.cardSubtitle}>Pending reset requests</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* ADDED COPYRIGHT FOOTER */}
+          <View style={styles.footerContainer}>
+              <Text style={styles.tagline}>Intelligent Resource & Ledger Management</Text>
+              <Text style={styles.copyrightText}>
+                  © 2026 AstraCIT • Developed by <Text style={{fontWeight: '900', color: '#0052CC'}}>CodeTitans</Text>
+              </Text>
+              <Text style={styles.rightsText}>All Rights Reserved</Text>
           </View>
         </ScrollView>
       </View>
@@ -114,5 +155,40 @@ const styles = StyleSheet.create({
   },
   iconContainer: { width: 52, height: 52, borderRadius: 14, justifyContent: 'center', alignItems: 'center', marginBottom: 16 },
   cardTitle: { fontSize: 15, fontWeight: '800', color: '#1E293B' },
-  cardSubtitle: { fontSize: 11, color: '#64748B', marginTop: 4, lineHeight: 16 }
+  cardSubtitle: { fontSize: 11, color: '#64748B', marginTop: 4, lineHeight: 16 },
+  
+  // BADGE STYLES
+  badge: { 
+    position: 'absolute', top: -5, right: -5, 
+    backgroundColor: '#EF4444', borderRadius: 10, 
+    minWidth: 20, height: 20, justifyContent: 'center', 
+    alignItems: 'center', borderWidth: 2, borderColor: '#FFF' 
+  },
+  badgeText: { color: 'white', fontSize: 10, fontWeight: 'bold' },
+
+  // FOOTER STYLES
+  footerContainer: {
+    marginTop: 40,
+    marginBottom: 20,
+    alignItems: 'center',
+  },
+  tagline: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#94A3B8',
+    letterSpacing: 1,
+    marginBottom: 5,
+    textTransform: 'uppercase'
+  },
+  copyrightText: {
+    fontSize: 11,
+    color: '#64748B',
+    fontWeight: '600'
+  },
+  rightsText: {
+    fontSize: 9,
+    color: '#94A3B8',
+    marginTop: 2,
+    fontWeight: '500'
+  }
 });

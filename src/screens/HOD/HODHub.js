@@ -19,15 +19,13 @@ const { width } = Dimensions.get('window');
 export default function HODHub({ navigation }) {
   const [pendingCount, setPendingCount] = useState(0);
   const [handoverCount, setHandoverCount] = useState(0);
-  const [damageCount, setDamageCount] = useState(0); // Track reported damages
+  const [damageCount, setDamageCount] = useState(0); 
   const currentUser = "Dr. Sujey (HOD)";
   
-  // Animation Refs
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
 
   useEffect(() => {
-    // Trigger Entrance Animation
     Animated.parallel([
       Animated.timing(fadeAnim, { toValue: 1, duration: 800, useNativeDriver: true }),
       Animated.timing(slideAnim, { toValue: 0, duration: 600, useNativeDriver: true })
@@ -41,7 +39,6 @@ export default function HODHub({ navigation }) {
     const qHandover = query(requisitionsRef, where("requestedBy", "==", currentUser), where("status", "in", ["Dispensed", "Received by Stores"]));
     const unsubHandover = onSnapshot(qHandover, (snapshot) => setHandoverCount(snapshot.docs.length));
 
-    // Listen for reported damages
     const qDamage = query(collection(db, 'disposal_requests'), where("reportedBy", "==", currentUser), where("status", "==", "Reported"));
     const unsubDamage = onSnapshot(qDamage, (snapshot) => setDamageCount(snapshot.docs.length));
 
@@ -53,8 +50,9 @@ export default function HODHub({ navigation }) {
       {/* BRANDED HEADER */}
       <View style={styles.header}>
         <View style={styles.brandContainer}>
+          {/* FIXED: Using local asset logo for mobile reliability */}
           <Image 
-            source={{ uri: 'https://images.shiksha.com/mediadata/images/1583389585phpP9W1tB_m.jpg' }} 
+            source={require('../../../assets/logo.png')} 
             style={styles.citLogo} 
             resizeMode="contain"
           />
@@ -91,7 +89,6 @@ export default function HODHub({ navigation }) {
               </View>
             </View>
             
-            {/* GRAPH VISUAL (Utilization Bar) */}
             <View style={styles.graphContainer}>
               <View style={styles.graphHeader}>
                 <Text style={styles.graphText}>Monthly Resource Utilization</Text>
@@ -106,7 +103,6 @@ export default function HODHub({ navigation }) {
           <Text style={styles.sectionTitle}>Main Operations</Text>
 
           <View style={styles.grid}>
-            {/* CARD 1: NEW REQUISITION */}
             <TouchableOpacity 
               style={styles.featureCard} 
               onPress={() => navigation.navigate('Requisition')}
@@ -119,7 +115,6 @@ export default function HODHub({ navigation }) {
               <Text style={styles.cardDesc}>Raise new material indent for labs/dept.</Text>
             </TouchableOpacity>
 
-            {/* CARD 2: LIVE TRACKING */}
             <TouchableOpacity 
               style={styles.featureCard} 
               onPress={() => navigation.navigate('LiveTracker')}
@@ -135,7 +130,6 @@ export default function HODHub({ navigation }) {
               <Text style={styles.cardDesc}>Track real-time approval status.</Text>
             </TouchableOpacity>
 
-            {/* CARD 3: ASSET HANDOVER */}
             <TouchableOpacity 
               style={styles.featureCard} 
               onPress={() => navigation.navigate('AssetHandover')}
@@ -151,7 +145,6 @@ export default function HODHub({ navigation }) {
               <Text style={styles.cardDesc}>Allocate dispensed items to classrooms.</Text>
             </TouchableOpacity>
 
-            {/* CARD 4: REPORT DAMAGE */}
             <TouchableOpacity 
               style={styles.featureCard} 
               onPress={() => navigation.navigate('ReportDamage')}
@@ -163,6 +156,15 @@ export default function HODHub({ navigation }) {
               <Text style={[styles.cardTitle, { color: '#991B1B' }]}>Report Damage</Text>
               <Text style={styles.cardDesc}>File report for damaged lab equipment.</Text>
             </TouchableOpacity>
+          </View>
+
+          {/* ADDED COPYRIGHT FOOTER */}
+          <View style={styles.footerContainer}>
+              <Text style={styles.tagline}>Intelligent Resource & Ledger Management</Text>
+              <Text style={styles.copyrightText}>
+                  © 2026 AstraCIT • Developed by <Text style={{fontWeight: '900', color: '#2563EB'}}>CodeTitans</Text>
+              </Text>
+              <Text style={styles.rightsText}>All Rights Reserved</Text>
           </View>
 
         </Animated.View>
@@ -212,5 +214,31 @@ const styles = StyleSheet.create({
   cardTitle: { fontSize: 15, fontWeight: '700', color: '#0F172A' },
   cardDesc: { fontSize: 11, color: '#64748B', marginTop: 5, lineHeight: 16 },
   badge: { position: 'absolute', top: -5, right: -5, backgroundColor: '#EF4444', borderRadius: 10, minWidth: 20, padding: 4, alignItems: 'center', borderWidth: 2, borderColor: '#FFF' },
-  badgeText: { color: 'white', fontSize: 10, fontWeight: 'bold' }
+  badgeText: { color: 'white', fontSize: 10, fontWeight: 'bold' },
+
+  // FOOTER STYLES
+  footerContainer: {
+    marginTop: 20,
+    marginBottom: 20,
+    alignItems: 'center',
+  },
+  tagline: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#94A3B8',
+    letterSpacing: 1,
+    marginBottom: 5,
+    textTransform: 'uppercase'
+  },
+  copyrightText: {
+    fontSize: 11,
+    color: '#64748B',
+    fontWeight: '600'
+  },
+  rightsText: {
+    fontSize: 9,
+    color: '#94A3B8',
+    marginTop: 2,
+    fontWeight: '500'
+  }
 });

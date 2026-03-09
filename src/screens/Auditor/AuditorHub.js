@@ -14,8 +14,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { db } from '../../api/firebaseConfig';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
-import * as Print from 'expo-print'; // NEW: For PDF Generation
-import * as Sharing from 'expo-sharing'; // NEW: For Sharing the file
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
 
 export default function AuditorHub({ navigation }) {
   const [activeTab, setActiveTab] = useState('Finances'); 
@@ -46,7 +46,6 @@ export default function AuditorHub({ navigation }) {
     return unsub;
   }, [activeTab]);
 
-  // ACTUAL PDF GENERATION LOGIC
   const handleExport = async () => {
     if (data.length === 0) {
         Alert.alert("No Data", "There are no records to export in this category.");
@@ -55,7 +54,6 @@ export default function AuditorHub({ navigation }) {
 
     setIsExporting(true);
     try {
-      // Create HTML Table from Live Firestore Data
       const tableRows = data.map(item => `
         <tr>
           <td style="padding: 10px; border: 1px solid #ddd;">${item.vendor || item.itemName || 'N/A'}</td>
@@ -91,14 +89,11 @@ export default function AuditorHub({ navigation }) {
         </html>
       `;
 
-      // Generate PDF File
       const { uri } = await Print.printToFileAsync({ html: htmlContent });
       
-      // Open Sharing Dialogue
       if (Platform.OS === 'ios' || Platform.OS === 'android') {
         await Sharing.shareAsync(uri, { UTI: '.pdf', mimeType: 'application/pdf' });
       } else {
-        // Fallback for Web
         await Print.printAsync({ html: htmlContent });
       }
     } catch (error) {
@@ -140,8 +135,9 @@ export default function AuditorHub({ navigation }) {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <View style={styles.brandContainer}>
+          {/* FIXED: Using local asset logo */}
           <Image 
-            source={{ uri: 'https://images.shiksha.com/mediadata/images/1583389585phpP9W1tB_m.jpg' }} 
+            source={require('../../../assets/logo.png')} 
             style={styles.citLogo} 
             resizeMode="contain"
           />
@@ -196,9 +192,18 @@ export default function AuditorHub({ navigation }) {
         <FlatList
           data={data}
           keyExtractor={item => item.id}
-          contentContainerStyle={{ padding: 20, paddingBottom: 120 }}
+          contentContainerStyle={{ padding: 20, paddingBottom: 150 }}
           renderItem={renderAuditItem}
           ListEmptyComponent={<Text style={styles.emptyText}>No data logs found for verification.</Text>}
+          ListFooterComponent={
+            <View style={styles.footerContainer}>
+                <Text style={styles.tagline}>Intelligent Resource & Ledger Management</Text>
+                <Text style={styles.copyrightText}>
+                    © 2026 AstraCIT • Developed by <Text style={{fontWeight: '900', color: '#6366F1'}}>CodeTitans</Text>
+                </Text>
+                <Text style={styles.rightsText}>All Rights Reserved</Text>
+            </View>
+          }
         />
       )}
 
@@ -273,5 +278,31 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 6 },
     gap: 12
   },
-  scanFabText: { color: '#FFF', fontWeight: '900', fontSize: 14, letterSpacing: 1.2 }
+  scanFabText: { color: '#FFF', fontWeight: '900', fontSize: 14, letterSpacing: 1.2 },
+  
+  // FOOTER STYLES
+  footerContainer: {
+    marginTop: 30,
+    alignItems: 'center',
+    paddingBottom: 20,
+  },
+  tagline: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#94A3B8',
+    letterSpacing: 1,
+    marginBottom: 5,
+    textTransform: 'uppercase'
+  },
+  copyrightText: {
+    fontSize: 11,
+    color: '#64748B',
+    fontWeight: '600'
+  },
+  rightsText: {
+    fontSize: 9,
+    color: '#94A3B8',
+    marginTop: 2,
+    fontWeight: '500'
+  }
 });

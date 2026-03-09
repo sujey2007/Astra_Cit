@@ -47,8 +47,9 @@ export default function SupervisorHub({ navigation }) {
       {/* BRANDED HEADER WITH LOGO AND LOGOUT */}
       <View style={styles.header}>
         <View style={styles.brandContainer}>
+          {/* UPDATED: Using local asset for mobile reliability */}
           <Image 
-            source={{ uri: 'https://images.shiksha.com/mediadata/images/1583389585phpP9W1tB_m.jpg' }} 
+            source={require('../../../assets/logo.png')} 
             style={styles.citLogo} 
             resizeMode="contain"
           />
@@ -155,6 +156,15 @@ export default function SupervisorHub({ navigation }) {
             <Text style={styles.cardSub}>Available site assets</Text>
           </TouchableOpacity>
         </View>
+
+        {/* ADDED COPYRIGHT FOOTER */}
+        <View style={styles.footerContainer}>
+            <Text style={styles.tagline}>Intelligent Resource & Ledger Management</Text>
+            <Text style={styles.copyrightText}>
+                © 2026 AstraCIT • Developed by <Text style={{fontWeight: '900', color: '#1D4ED8'}}>CodeTitans</Text>
+            </Text>
+            <Text style={styles.rightsText}>All Rights Reserved</Text>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -186,7 +196,6 @@ const styles = StyleSheet.create({
   },
   content: { padding: 20 },
   
-  // OVERVIEW BAR STYLING
   overviewBar: { 
     flexDirection: 'row', 
     backgroundColor: '#FFF', 
@@ -227,13 +236,35 @@ const styles = StyleSheet.create({
     minHeight: 180 
   },
   iconBox: { 
-    width: 56, 
-    height: 56, 
-    borderRadius: 16, 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    marginBottom: 15 
+    width: 56, height: 56, borderRadius: 16, 
+    justifyContent: 'center', alignItems: 'center', marginBottom: 15 
   },
   cardTitle: { fontSize: 15, fontWeight: '800', color: '#1E293B' },
-  cardSub: { fontSize: 11, color: '#64748B', marginTop: 4 }
+  cardSub: { fontSize: 11, color: '#64748B', marginTop: 4 },
+
+  // FOOTER STYLES
+  footerContainer: {
+    marginTop: 30,
+    marginBottom: 20,
+    alignItems: 'center',
+  },
+  tagline: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#94A3B8',
+    letterSpacing: 1,
+    marginBottom: 5,
+    textTransform: 'uppercase'
+  },
+  copyrightText: {
+    fontSize: 11,
+    color: '#64748B',
+    fontWeight: '600'
+  },
+  rightsText: {
+    fontSize: 9,
+    color: '#94A3B8',
+    marginTop: 2,
+    fontWeight: '500'
+  }
 });

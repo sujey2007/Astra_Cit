@@ -52,7 +52,6 @@ export default function StoresHub({ navigation }) {
     return () => { unsubReq(); unsubInv(); unsubDisposal(); };
   }, []);
 
-  // REORDER LOGIC: Matches Procurement Hub Filters
   const handleReorder = async (item) => {
     setIsProcessing(true);
     try {
@@ -78,8 +77,9 @@ export default function StoresHub({ navigation }) {
       {/* BRANDED HEADER */}
       <View style={styles.header}>
         <View style={styles.brandContainer}>
+          {/* UPDATED: Using local asset for mobile reliability */}
           <Image 
-            source={{ uri: 'https://images.shiksha.com/mediadata/images/1583389585phpP9W1tB_m.jpg' }} 
+            source={require('../../../assets/logo.png')} 
             style={styles.citLogo} 
             resizeMode="contain"
           />
@@ -150,7 +150,7 @@ export default function StoresHub({ navigation }) {
             <Text style={styles.cardDesc}>Real-time stock and asset distribution.</Text>
           </TouchableOpacity>
 
-          {/* 3. ASSET TAGGING (CREATE NEW QR) */}
+          {/* 3. ASSET TAGGING */}
           <TouchableOpacity style={styles.featureCard} onPress={() => navigation.navigate('GenerateQR')}>
             <View style={[styles.iconBox, { backgroundColor: '#FDF2F8' }]}>
               <Ionicons name="qr-code" size={28} color="#DB2777" />
@@ -159,7 +159,7 @@ export default function StoresHub({ navigation }) {
             <Text style={styles.cardDesc}>File new assets and generate QR for Auditor.</Text>
           </TouchableOpacity>
 
-          {/* 4. VIEW ASSET TAGS (RECOVER EXISTING QR) */}
+          {/* 4. VIEW ASSET TAGS */}
           <TouchableOpacity style={styles.featureCard} onPress={() => navigation.navigate('ViewAssetTags')}>
             <View style={[styles.iconBox, { backgroundColor: '#F1F5F9' }]}>
               <Ionicons name="list" size={28} color="#6366F1" />
@@ -206,6 +206,15 @@ export default function StoresHub({ navigation }) {
             <Text style={styles.cardTitle}>Receipt History</Text>
             <Text style={styles.cardDesc}>Review inward logs and digital bills.</Text>
           </TouchableOpacity>
+        </View>
+
+        {/* ADDED COPYRIGHT FOOTER */}
+        <View style={styles.footerContainer}>
+            <Text style={styles.tagline}>Intelligent Resource & Ledger Management</Text>
+            <Text style={styles.copyrightText}>
+                © 2026 AstraCIT • Developed by <Text style={{fontWeight: '900', color: '#4338CA'}}>CodeTitans</Text>
+            </Text>
+            <Text style={styles.rightsText}>All Rights Reserved</Text>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -256,4 +265,30 @@ const styles = StyleSheet.create({
   badgeCountText: { color: 'white', fontSize: 10, fontWeight: 'bold' },
   cardTitle: { color: '#0F172A', fontSize: 16, fontWeight: '700', marginBottom: 8 },
   cardDesc: { color: '#64748B', fontSize: 12, lineHeight: 18 },
+
+  // FOOTER STYLES
+  footerContainer: {
+    marginTop: 30,
+    marginBottom: 20,
+    alignItems: 'center',
+  },
+  tagline: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#94A3B8',
+    letterSpacing: 1,
+    marginBottom: 5,
+    textTransform: 'uppercase'
+  },
+  copyrightText: {
+    fontSize: 11,
+    color: '#64748B',
+    fontWeight: '600'
+  },
+  rightsText: {
+    fontSize: 9,
+    color: '#94A3B8',
+    marginTop: 2,
+    fontWeight: '500'
+  }
 });

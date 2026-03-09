@@ -11,23 +11,22 @@ import {
   ActivityIndicator 
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { BarChart } from 'react-native-chart-kit'; // Logic synced with SystemAnalytics
+import { BarChart } from 'react-native-chart-kit'; 
 import { db } from '../../api/firebaseConfig';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
 
 const screenWidth = Dimensions.get("window").width;
-const COLORS = ['#1D4ED8', '#10B981', '#F59E0B']; // Branding Colors
+const COLORS = ['#1D4ED8', '#10B981', '#F59E0B']; 
 
 export default function AccountsHub({ navigation }) {
   const [pendingPayments, setPendingPayments] = useState(0);
   const [totalExpenses, setTotalExpenses] = useState(0);
   const [loading, setLoading] = useState(true);
   
-  // State for Chart Data (Logic synced with SystemAnalytics)
   const [chartData, setChartData] = useState({
     labels: ["Jan", "Feb", "Mar"],
     datasets: [{ 
-      data: [145, 198, 0], // Values in Thousands (k)
+      data: [145, 198, 0], 
       colors: [
         (opacity = 1) => COLORS[0],
         (opacity = 1) => COLORS[1],
@@ -37,28 +36,23 @@ export default function AccountsHub({ navigation }) {
   });
 
   useEffect(() => {
-    // 1. Fetch Pending Wage Approvals
     const qWages = query(collection(db, "construction_attendance"), where("paymentStatus", "==", "Pending"));
     const unsubWages = onSnapshot(qWages, (snap) => setPendingPayments(snap.docs.length));
 
-    // 2. Fetch Total Spend & Live Ledger Data
     const qLedger = collection(db, "institutional_ledger");
     const unsubLedger = onSnapshot(qLedger, (snap) => {
       const docs = snap.docs.map(doc => doc.data());
       
-      // Sanitized Numerical Calculation
       const liveTotal = docs.reduce((acc, data) => acc + (parseFloat(data.amount) || 0), 0);
       const approxInventoryValue = 330000; 
       setTotalExpenses(liveTotal + approxInventoryValue);
 
-      // Extract March Spend for the Chart
       const marchSpend = docs.filter(data => {
         const date = data.timestamp?.toDate();
         return date && date.getMonth() === 2 && date.getFullYear() === 2026;
       }).reduce((acc, data) => acc + (parseFloat(data.amount) || 0), 0);
 
-      // Sync Chart State (Logic similar to SystemAnalytics)
-      const marchTotalK = (marchSpend + 210000) / 1000; // Convert to 'k' for bar scale
+      const marchTotalK = (marchSpend + 210000) / 1000; 
       setChartData({
         labels: ["Jan", "Feb", "Mar"],
         datasets: [{ 
@@ -83,9 +77,11 @@ export default function AccountsHub({ navigation }) {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <View style={styles.brandContainer}>
+          {/* FIXED: Using local asset logo for mobile reliability */}
           <Image 
-            source={{ uri: 'https://images.shiksha.com/mediadata/images/1583389585phpP9W1tB_m.jpg' }} 
+            source={require('../../../assets/logo.png')} 
             style={styles.citLogo} 
+            resizeMode="contain"
           />
           <View>
             <Text style={styles.title}>ACCOUNTS HUB</Text>
@@ -114,7 +110,7 @@ export default function AccountsHub({ navigation }) {
           </View>
         </View>
 
-        {/* MONTHLY SPENDING CHART - Integration from SystemAnalytics */}
+        {/* MONTHLY SPENDING CHART */}
         <Text style={styles.sectionLabel}>Spending Growth (in ₹k)</Text>
         <View style={styles.chartWrapper}>
           {loading ? (
@@ -134,7 +130,7 @@ export default function AccountsHub({ navigation }) {
                 labelColor: (opacity = 1) => `rgba(100, 116, 139, ${opacity})`,
                 barPercentage: 0.6,
                 decimalPlaces: 0,
-              }}
+                }}
               style={styles.chart}
             />
           )}
@@ -175,6 +171,15 @@ export default function AccountsHub({ navigation }) {
             <Text style={styles.cardSub}>Full audit trail</Text>
           </TouchableOpacity>
         </View>
+
+        {/* ADDED COPYRIGHT FOOTER */}
+        <View style={styles.footerContainer}>
+            <Text style={styles.tagline}>Intelligent Resource & Ledger Management</Text>
+            <Text style={styles.copyrightText}>
+                © 2026 AstraCIT • Developed by <Text style={{fontWeight: '900', color: '#1D4ED8'}}>CodeTitans</Text>
+            </Text>
+            <Text style={styles.rightsText}>All Rights Reserved</Text>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -194,15 +199,38 @@ const styles = StyleSheet.create({
   borderLeft: { borderLeftWidth: 1, borderColor: '#F1F5F9' },
   statValue: { fontSize: 20, fontWeight: '900', color: '#1D4ED8' },
   statLabel: { fontSize: 8, fontWeight: '800', color: '#94A3B8', marginTop: 4, letterSpacing: 1 },
-  
-  // CHART STYLES (Synced from SystemAnalytics)
   chartWrapper: { backgroundColor: '#FFF', padding: 15, borderRadius: 24, marginBottom: 25, borderWidth: 1, borderColor: '#E2E8F0', elevation: 2, alignItems: 'center' },
   chart: { borderRadius: 16, marginTop: 10 },
-
   sectionLabel: { fontSize: 11, fontWeight: '800', color: '#94A3B8', letterSpacing: 1, marginBottom: 15, textTransform: 'uppercase' },
   grid: { flexDirection: 'row', justifyContent: 'space-between', flexWrap: 'wrap' },
   featureCard: { width: '48%', backgroundColor: '#FFF', padding: 20, borderRadius: 24, elevation: 4, marginBottom: 16, borderWidth: 1, borderColor: '#F1F5F9', minHeight: 180 },
   iconBox: { width: 56, height: 56, borderRadius: 18, justifyContent: 'center', alignItems: 'center', marginBottom: 15 },
   cardTitle: { fontSize: 15, fontWeight: '800', color: '#1E293B' },
-  cardSub: { fontSize: 11, color: '#64748B', marginTop: 4, fontWeight: '500' }
+  cardSub: { fontSize: 11, color: '#64748B', marginTop: 4, fontWeight: '500' },
+  
+  // FOOTER STYLES
+  footerContainer: {
+    marginTop: 30,
+    marginBottom: 20,
+    alignItems: 'center',
+  },
+  tagline: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#94A3B8',
+    letterSpacing: 1,
+    marginBottom: 5,
+    textTransform: 'uppercase'
+  },
+  copyrightText: {
+    fontSize: 11,
+    color: '#64748B',
+    fontWeight: '600'
+  },
+  rightsText: {
+    fontSize: 9,
+    color: '#94A3B8',
+    marginTop: 2,
+    fontWeight: '500'
+  }
 });

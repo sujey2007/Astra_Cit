@@ -11,6 +11,7 @@ import RegisterUser from './src/screens/Admin/RegisterUser';
 import UserManagement from './src/screens/Admin/UserManagement'; 
 import GlobalTransactions from './src/screens/Admin/GlobalTransactions'; 
 import SystemAnalytics from './src/screens/Admin/SystemAnalytics'; 
+import PasswordRequests from './src/screens/Admin/PasswordRequests'; // NEW: Imported missing screen
 
 // 2. HOD Portal Screens
 import HODHub from './src/screens/HOD/HODHub'; 
@@ -29,7 +30,7 @@ import DisposalManagement from './src/screens/Stores/DisposalManagement';
 import ReceiptHistory from './src/screens/Stores/ReceiptHistory'; 
 import ManualPurchaseRequest from './src/screens/Stores/ManualPurchaseRequest';
 import GenerateQR from './src/screens/Stores/GenerateQR'; 
-import ViewAssetTags from './src/screens/Stores/ViewAssetTags'; // NEW: Added for QR Recovery
+import ViewAssetTags from './src/screens/Stores/ViewAssetTags'; 
 
 // 4. Procurement (Purchase) Module
 import ProcurementHub from './src/screens/Procurement/ProcurementHub';
@@ -77,6 +78,7 @@ export default function App() {
         <Stack.Screen name="UserManagement" component={UserManagement} />
         <Stack.Screen name="GlobalTransactions" component={GlobalTransactions} />
         <Stack.Screen name="SystemAnalytics" component={SystemAnalytics} />
+        <Stack.Screen name="PasswordRequests" component={PasswordRequests} /> 
         
         {/* HOD MODULE */}
         <Stack.Screen name="HODHub" component={HODHub} />

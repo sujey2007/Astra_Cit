@@ -9,25 +9,44 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#0F172A"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.sujey.astracit",
+      "infoPlist": {
+        "NSCameraUsageDescription": "AstraCIT needs camera access to scan institutional asset QR codes for the Auditor Hub."
+      }
     },
     "android": {
+      "package": "com.sujey.astracit",
+      "versionCode": 1,
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
-      }
+        "backgroundColor": "#0F172A",
+        "foregroundImage": "./assets/android-icon-foreground.png"
+      },
+      "permissions": [
+        "CAMERA",
+        "WRITE_EXTERNAL_STORAGE",
+        "READ_EXTERNAL_STORAGE"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-barcode-scanner",
-      "expo-sharing"
-    ]
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow AstraCIT to access your camera to verify institutional assets.",
+          "microphonePermission": "Allow AstraCIT to access your microphone."
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "4f543d41-60c6-4cb4-986e-f86af8efe62c"
+      }
+    }
   }
 }

@@ -1,5 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Image } from 'react-native';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  SafeAreaView, 
+  TouchableOpacity, 
+  ScrollView, 
+  Image,
+  ActivityIndicator 
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { db } from '../../api/firebaseConfig';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
@@ -44,8 +53,9 @@ export default function ProcurementHub({ navigation }) {
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
             <Ionicons name="arrow-back" size={24} color="#1E293B" />
           </TouchableOpacity>
+          {/* UPDATED: Using local asset for mobile reliability */}
           <Image 
-            source={{ uri: 'https://images.shiksha.com/mediadata/images/1583389585phpP9W1tB_m.jpg' }} 
+            source={require('../../../assets/logo.png')} 
             style={styles.citLogo} 
             resizeMode="contain"
           />
@@ -62,7 +72,7 @@ export default function ProcurementHub({ navigation }) {
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {/* NEW: LIVE OVERVIEW BAR */}
+        {/* LIVE OVERVIEW BAR */}
         <View style={styles.overviewBar}>
           <View style={styles.statBox}>
             <Text style={styles.statValue}>{pendingCount}</Text>
@@ -100,6 +110,15 @@ export default function ProcurementHub({ navigation }) {
             <Text style={styles.cardSub}>View fulfilled PO work</Text>
           </TouchableOpacity>
         </View>
+
+        {/* ADDED COPYRIGHT FOOTER */}
+        <View style={styles.footerContainer}>
+            <Text style={styles.tagline}>Intelligent Resource & Ledger Management</Text>
+            <Text style={styles.copyrightText}>
+                © 2026 AstraCIT • Developed by <Text style={{fontWeight: '900', color: '#D97706'}}>CodeTitans</Text>
+            </Text>
+            <Text style={styles.rightsText}>All Rights Reserved</Text>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -107,7 +126,11 @@ export default function ProcurementHub({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFC' },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 15, backgroundColor: '#FFF', borderBottomWidth: 1, borderColor: '#E2E8F0', elevation: 4 },
+  header: { 
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', 
+    paddingHorizontal: 20, paddingVertical: 15, backgroundColor: '#FFF', 
+    borderBottomWidth: 1, borderColor: '#E2E8F0', elevation: 4 
+  },
   brandContainer: { flexDirection: 'row', alignItems: 'center' },
   backBtn: { marginRight: 12 },
   citLogo: { width: 38, height: 38, marginRight: 10 },
@@ -116,7 +139,6 @@ const styles = StyleSheet.create({
   logoutBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FEF2F2', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12 },
   logoutText: { color: '#D32F2F', fontSize: 12, fontWeight: '800', marginLeft: 6 },
   
-  // OVERVIEW BAR STYLES
   overviewBar: { flexDirection: 'row', backgroundColor: '#FFF', borderRadius: 20, padding: 20, marginBottom: 25, elevation: 3, borderWidth: 1, borderColor: '#F1F5F9' },
   statBox: { flex: 1, alignItems: 'center' },
   borderLeft: { borderLeftWidth: 1, borderColor: '#F1F5F9' },
@@ -131,5 +153,31 @@ const styles = StyleSheet.create({
   badge: { position: 'absolute', top: -5, right: -5, backgroundColor: '#EF4444', borderRadius: 12, minWidth: 22, height: 22, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#FFF' },
   badgeText: { color: '#FFF', fontSize: 11, fontWeight: '900' },
   cardTitle: { fontSize: 15, fontWeight: '800', color: '#1E293B' },
-  cardSub: { fontSize: 11, color: '#64748B', marginTop: 4 }
+  cardSub: { fontSize: 11, color: '#64748B', marginTop: 4 },
+
+  // FOOTER STYLES
+  footerContainer: {
+    marginTop: 40,
+    marginBottom: 20,
+    alignItems: 'center',
+  },
+  tagline: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#94A3B8',
+    letterSpacing: 1,
+    marginBottom: 5,
+    textTransform: 'uppercase'
+  },
+  copyrightText: {
+    fontSize: 11,
+    color: '#64748B',
+    fontWeight: '600'
+  },
+  rightsText: {
+    fontSize: 9,
+    color: '#94A3B8',
+    marginTop: 2,
+    fontWeight: '500'
+  }
 });

@@ -11,7 +11,9 @@ ActivityIndicator,
 StatusBar,
 ScrollView,
 Image,
-Dimensions
+Dimensions,
+Alert,
+Modal
 } from 'react-native';
 
 import { Ionicons } from '@expo/vector-icons';
@@ -20,9 +22,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 // Database Imports
 import { db } from '../../api/firebaseConfig';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 const ROLES = [
 { id: "Stores", label: "Stores Department" },
@@ -44,6 +46,11 @@ const [selectedRole, setSelectedRole] = useState(null);
 const [isDropdownVisible, setIsDropdownVisible] = useState(false);
 const [isLoading, setIsLoading] = useState(false);
 const [errorMessage, setErrorMessage] = useState("");
+
+// Forgot Password States
+const [forgotModal, setForgotModal] = useState(false);
+const [forgotUsername, setForgotUsername] = useState("");
+const [isSending, setIsSending] = useState(false);
 
 const handleLogin = async () => {
 
@@ -98,6 +105,46 @@ setErrorMessage("Connection failed.");
 
 };
 
+// UPDATED: Functional Forgot Password Logic
+const handleForgotPasswordRequest = async () => {
+    if (!forgotUsername) {
+        Alert.alert("Input Required", "Please enter your username.");
+        return;
+    }
+
+    setIsSending(true);
+    try {
+        // 1. Verify if user exists in 'users' collection
+        const userRef = doc(db, "users", forgotUsername.toLowerCase().trim());
+        const userSnap = await getDoc(userRef);
+
+        if (!userSnap.exists()) {
+            Alert.alert("User Not Found", "This username is not registered in the system.");
+            setIsSending(false);
+            return;
+        }
+
+        // 2. Create a request for the Admin
+        await setDoc(doc(db, "password_requests", forgotUsername.toLowerCase().trim()), {
+            username: forgotUsername.toLowerCase().trim(),
+            role: userSnap.data().role,
+            status: "Pending",
+            requestedAt: serverTimestamp()
+        });
+
+        Alert.alert(
+            "Request Sent", 
+            "The System Admin has been notified. Please contact them for your new login credentials.",
+            [{ text: "OK", onPress: () => setForgotModal(false) }]
+        );
+        setForgotUsername("");
+    } catch (error) {
+        Alert.alert("Error", "Could not send request. Please check your connection.");
+    } finally {
+        setIsSending(false);
+    }
+};
+
 return (
 
 <View style={styles.container}>
@@ -113,7 +160,7 @@ style={styles.topSection}
 <View style={styles.logoWrapper}>
 
 <Image
-source={{uri:'https://images.shiksha.com/mediadata/images/1583389585phpP9W1tB_m.jpg'}}
+source={require('../../../assets/logo.png')}
 style={styles.citLogo}
 resizeMode="contain"
 />
@@ -153,15 +200,15 @@ contentContainerStyle={{paddingTop:20}}
 Welcome <Text style={{fontWeight:'300'}}>back!</Text>
 </Text>
 
-{/* ROLE SELECTOR */}
+{/* ROLE SELECTOR - FIXED WITH MODAL FOR FULL SCROLLING */}
 
-<View style={[styles.inputGroup,{zIndex:1000}]}>
+<View style={styles.inputGroup}>
 
 <Text style={styles.label}>DESIGNATION</Text>
 
 <TouchableOpacity
 style={styles.dropdown}
-onPress={()=>setIsDropdownVisible(!isDropdownVisible)}
+onPress={()=>setIsDropdownVisible(true)}
 >
 
 <Text style={[styles.dropdownText,!selectedRole && {color:'#94A3B8'}]}>
@@ -169,46 +216,56 @@ onPress={()=>setIsDropdownVisible(!isDropdownVisible)}
 </Text>
 
 <Ionicons
-name={isDropdownVisible ? "chevron-up":"chevron-down"}
+name="chevron-down"
 size={20}
 color="#2563EB"
 />
 
 </TouchableOpacity>
 
-{isDropdownVisible && (
-
-<View style={styles.dropdownListContainer}>
-
-<ScrollView
-nestedScrollEnabled={true}
-style={styles.dropdownScrollView}
+{/* DESIGNATION MODAL PICKER */}
+<Modal
+    visible={isDropdownVisible}
+    transparent={true}
+    animationType="fade"
 >
-
-{ROLES.map(role=>(
-<TouchableOpacity
-key={role.id}
-style={styles.roleItem}
-onPress={()=>{
-
-setSelectedRole(role.id);
-setIsDropdownVisible(false);
-
-}}
->
-
-<Text style={styles.roleItemText}>
-{role.label}
-</Text>
-
-</TouchableOpacity>
-))}
-
-</ScrollView>
-
-</View>
-
-)}
+    <View style={styles.modalOverlay}>
+        <View style={styles.pickerContainer}>
+            <View style={styles.pickerHeader}>
+                <Text style={styles.pickerTitle}>Select Designation</Text>
+                <TouchableOpacity onPress={() => setIsDropdownVisible(false)}>
+                    <Ionicons name="close-circle" size={24} color="#64748B" />
+                </TouchableOpacity>
+            </View>
+            
+            <ScrollView style={{maxHeight: height * 0.5}}>
+                {ROLES.map((role) => (
+                    <TouchableOpacity
+                        key={role.id}
+                        style={[
+                            styles.roleItem,
+                            selectedRole === role.id && { backgroundColor: '#EFF6FF' }
+                        ]}
+                        onPress={() => {
+                            setSelectedRole(role.id);
+                            setIsDropdownVisible(false);
+                        }}
+                    >
+                        <Text style={[
+                            styles.roleItemText,
+                            selectedRole === role.id && { color: '#2563EB' }
+                        ]}>
+                            {role.label}
+                        </Text>
+                        {selectedRole === role.id && (
+                            <Ionicons name="checkmark-circle" size={20} color="#2563EB" />
+                        )}
+                    </TouchableOpacity>
+                ))}
+            </ScrollView>
+        </View>
+    </View>
+</Modal>
 
 </View>
 
@@ -289,7 +346,10 @@ disabled={isLoading}
 
 </TouchableOpacity>
 
-<TouchableOpacity style={styles.forgotBtn}>
+<TouchableOpacity 
+    style={styles.forgotBtn}
+    onPress={() => setForgotModal(true)}
+>
 
 <Text style={styles.forgotText}>
 Forgot password?
@@ -299,9 +359,64 @@ Forgot password?
 
 </View>
 
+{/* COPYRIGHT SECTION */}
+<View style={styles.footerContainer}>
+    <Text style={styles.tagline}>Intelligent Resource & Ledger Management</Text>
+    <Text style={styles.copyrightText}>
+        © 2026 AstraCIT • Developed by <Text style={{fontWeight: '900', color: '#1E40AF'}}>CodeTitans</Text>
+    </Text>
+    <Text style={styles.rightsText}>All Rights Reserved</Text>
+</View>
+
 </ScrollView>
 
 </KeyboardAvoidingView>
+
+{/* FORGOT PASSWORD MODAL */}
+<Modal
+    visible={forgotModal}
+    transparent={true}
+    animationType="fade"
+>
+    <View style={styles.modalOverlay}>
+        <View style={styles.forgotCard}>
+            <Text style={styles.modalHeader}>Password Recovery</Text>
+            <Text style={styles.modalSub}>Enter your username to notify the System Admin for a password reset.</Text>
+            
+            <View style={styles.modalInputWrapper}>
+                <TextInput
+                    style={styles.modalInput}
+                    placeholder="Enter Username"
+                    placeholderTextColor="#94A3B8"
+                    value={forgotUsername}
+                    onChangeText={setForgotUsername}
+                    autoCapitalize="none"
+                />
+            </View>
+
+            <View style={styles.modalActions}>
+                <TouchableOpacity 
+                    style={styles.cancelBtn} 
+                    onPress={() => setForgotModal(false)}
+                >
+                    <Text style={styles.cancelText}>Cancel</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                    style={styles.submitBtn} 
+                    onPress={handleForgotPasswordRequest}
+                    disabled={isSending}
+                >
+                    {isSending ? (
+                        <ActivityIndicator color="#FFF" />
+                    ) : (
+                        <Text style={styles.submitText}>Send Request</Text>
+                    )}
+                </TouchableOpacity>
+            </View>
+        </View>
+    </View>
+</Modal>
 
 </View>
 
@@ -399,37 +514,6 @@ fontWeight:'600',
 color:'#1E293B'
 },
 
-dropdownListContainer:{
-position:'absolute',
-top:85,
-left:0,
-right:0,
-backgroundColor:'#FFF',
-borderRadius:15,
-elevation:10,
-zIndex:2000,
-borderWidth:1,
-borderColor:'#F1F5F9',
-maxHeight:180,
-overflow:'hidden'
-},
-
-dropdownScrollView:{
-flexGrow:0
-},
-
-roleItem:{
-padding:15,
-borderBottomWidth:1,
-borderBottomColor:'#F8FAFC'
-},
-
-roleItemText:{
-fontSize:13,
-color:'#475569',
-fontWeight:'600'
-},
-
 inputWrapper:{
 flexDirection:'row',
 alignItems:'center',
@@ -483,6 +567,153 @@ forgotText:{
 color:'#64748B',
 fontSize:12,
 fontWeight:'700'
+},
+
+footerContainer: {
+    marginTop: 40,
+    marginBottom: 20,
+    alignItems: 'center',
+},
+
+tagline: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#94A3B8',
+    letterSpacing: 1,
+    marginBottom: 8,
+    textTransform: 'uppercase'
+},
+
+copyrightText: {
+    fontSize: 12,
+    color: '#64748B',
+    fontWeight: '600'
+},
+
+rightsText: {
+    fontSize: 10,
+    color: '#94A3B8',
+    marginTop: 4,
+    fontWeight: '500'
+},
+
+// MODAL & PICKER STYLES
+modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20
+},
+
+pickerContainer: {
+    width: '100%',
+    backgroundColor: '#FFF',
+    borderRadius: 25,
+    paddingVertical: 20,
+    maxHeight: '70%',
+    elevation: 20
+},
+
+pickerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 25,
+    marginBottom: 15,
+    paddingBottom: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9'
+},
+
+pickerTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#1E293B'
+},
+
+roleItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 18,
+    paddingHorizontal: 25,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F8FAFC'
+},
+
+roleItemText: {
+    fontSize: 15,
+    color: '#475569',
+    fontWeight: '600'
+},
+
+// FORGOT PASSWORD MODAL SPECIFIC
+forgotCard: {
+    width: '100%',
+    backgroundColor: '#FFF',
+    borderRadius: 25,
+    padding: 25,
+    elevation: 10
+},
+
+modalHeader: {
+    fontSize: 20,
+    fontWeight: '900',
+    color: '#1E293B',
+    marginBottom: 10
+},
+
+modalSub: {
+    fontSize: 13,
+    color: '#64748B',
+    lineHeight: 18,
+    marginBottom: 20
+},
+
+modalInputWrapper: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 15,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    marginBottom: 20,
+    paddingHorizontal: 15
+},
+
+modalInput: {
+    height: 50,
+    fontSize: 14,
+    color: '#1E293B',
+    fontWeight: '600'
+},
+
+modalActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center'
+},
+
+cancelBtn: {
+    marginRight: 20
+},
+
+cancelText: {
+    fontSize: 14,
+    color: '#64748B',
+    fontWeight: '700'
+},
+
+submitBtn: {
+    backgroundColor: '#2563EB',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 12
+},
+
+submitText: {
+    color: '#FFF',
+    fontSize: 14,
+    fontWeight: '800'
 }
 
 });
