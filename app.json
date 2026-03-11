@@ -48,7 +48,8 @@
           "cameraPermission": "Allow AstraCIT to access your camera to verify institutional assets.",
           "microphonePermission": "Allow AstraCIT to access your microphone."
         }
-      ]
+      ],
+      "expo-sharing"
     ],
     "extra": {
       "eas": {

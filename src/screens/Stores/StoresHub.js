@@ -26,6 +26,7 @@ export default function StoresHub({ navigation }) {
   const [criticalItems, setCriticalItems] = useState([]);
   const [disposalCount, setDisposalCount] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [reorderedIds, setReorderedIds] = useState([]);
 
   const LOW_STOCK_THRESHOLD = 20;
 
@@ -38,8 +39,31 @@ export default function StoresHub({ navigation }) {
 
     // 2. Sync Live Inventory & Detect Low Stock
     const unsubInv = onSnapshot(collection(db, 'inventory'), (snapshot) => {
-      const allItems = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      const lowStock = allItems.filter(item => (item.stockCount || 0) < LOW_STOCK_THRESHOLD);
+      const allItems = snapshot.docs.map(doc => {
+        const data = doc.data();
+        
+        // SMART PARSER: Extract name from "INWARD: Name qty X" if itemName is missing
+        let finalName = data.itemName || data.productName || data.item;
+        
+        if (!finalName && data.description) {
+          const desc = data.description;
+          if (desc.includes("INWARD:")) {
+            // Extracts string between "INWARD:" and "qty"
+            finalName = desc.split("INWARD:")[1].split("qty")[0].trim();
+          } else {
+            finalName = desc;
+          }
+        }
+
+        return { 
+          id: doc.id, 
+          itemName: finalName || "Unnamed Asset",
+          stockCount: Number(data.stockCount) || Number(data.amount) || 0,
+          ...data 
+        };
+      });
+      
+      const lowStock = allItems.filter(item => item.stockCount < LOW_STOCK_THRESHOLD);
       setCriticalItems(lowStock);
     });
 
@@ -58,12 +82,14 @@ export default function StoresHub({ navigation }) {
       await addDoc(collection(db, 'requisitions'), {
         itemName: item.itemName,
         quantity: 50, 
-        requestedBy: "Stores System (Auto-Alert)",
+        requestedBy: "Stores System (Auto-PR)",
         department: "General Stores",
-        status: "PR Raised", 
+        status: "Pending", 
         createdAt: serverTimestamp(),
         isUrgent: true
       });
+      
+      setReorderedIds(prev => [...prev, item.id]);
       Alert.alert("Success", `${item.itemName} reorder request sent to Purchase Dept.`);
     } catch (error) {
       Alert.alert("Error", "Failed to send reorder request.");
@@ -72,12 +98,12 @@ export default function StoresHub({ navigation }) {
     }
   };
 
+  const visibleCriticalItems = criticalItems.filter(item => !reorderedIds.includes(item.id));
+
   return (
     <SafeAreaView style={styles.container}>
-      {/* BRANDED HEADER */}
       <View style={styles.header}>
         <View style={styles.brandContainer}>
-          {/* UPDATED: Using local asset for mobile reliability */}
           <Image 
             source={require('../../../assets/logo.png')} 
             style={styles.citLogo} 
@@ -99,19 +125,19 @@ export default function StoresHub({ navigation }) {
         <Text style={styles.dateText}>{new Date().toLocaleDateString('en-GB', { dateStyle: 'full' })}</Text>
 
         {/* CRITICAL STOCK ALERTS */}
-        {criticalItems.length > 0 && (
+        {visibleCriticalItems.length > 0 && (
           <View style={styles.dangerZone}>
             <View style={styles.dangerHeader}>
               <Ionicons name="alert-circle" size={22} color="#FFF" />
               <Text style={styles.dangerTitle}>CRITICAL STOCK DEPLETION</Text>
             </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.alertScroll}>
-              {criticalItems.map((item) => (
+              {visibleCriticalItems.map((item) => (
                 <View key={item.id} style={styles.dangerCard}>
                   <View style={styles.cardTop}>
                     <Text style={styles.dangerItemName} numberOfLines={1}>{item.itemName}</Text>
                     <View style={styles.stockBadge}>
-                       <Text style={styles.stockValue}>{item.stockCount}</Text>
+                        <Text style={styles.stockValue}>{item.stockCount}</Text>
                     </View>
                   </View>
                   <Text style={styles.statusSub}>CRITICAL LEVEL</Text>
@@ -129,7 +155,6 @@ export default function StoresHub({ navigation }) {
         )}
         
         <View style={styles.grid}>
-          {/* 1. MATERIAL REQUESTS */}
           <TouchableOpacity style={styles.featureCard} onPress={() => navigation.navigate('MaterialRequests')}>
             <View style={[styles.iconBox, { backgroundColor: '#E0E7FF' }]}>
               <Ionicons name="document-text" size={28} color="#4338CA" />
@@ -141,7 +166,6 @@ export default function StoresHub({ navigation }) {
             <Text style={styles.cardDesc}>Process incoming department requisitions.</Text>
           </TouchableOpacity>
 
-          {/* 2. LIVE INVENTORY */}
           <TouchableOpacity style={styles.featureCard} onPress={() => navigation.navigate('LiveInventory')}>
             <View style={[styles.iconBox, { backgroundColor: '#DCFCE7' }]}>
               <Ionicons name="cube" size={28} color="#15803D" />
@@ -150,7 +174,6 @@ export default function StoresHub({ navigation }) {
             <Text style={styles.cardDesc}>Real-time stock and asset distribution.</Text>
           </TouchableOpacity>
 
-          {/* 3. ASSET TAGGING */}
           <TouchableOpacity style={styles.featureCard} onPress={() => navigation.navigate('GenerateQR')}>
             <View style={[styles.iconBox, { backgroundColor: '#FDF2F8' }]}>
               <Ionicons name="qr-code" size={28} color="#DB2777" />
@@ -159,7 +182,6 @@ export default function StoresHub({ navigation }) {
             <Text style={styles.cardDesc}>File new assets and generate QR for Auditor.</Text>
           </TouchableOpacity>
 
-          {/* 4. VIEW ASSET TAGS */}
           <TouchableOpacity style={styles.featureCard} onPress={() => navigation.navigate('ViewAssetTags')}>
             <View style={[styles.iconBox, { backgroundColor: '#F1F5F9' }]}>
               <Ionicons name="list" size={28} color="#6366F1" />
@@ -168,7 +190,6 @@ export default function StoresHub({ navigation }) {
             <Text style={styles.cardDesc}>View and pull up existing filed asset QR codes.</Text>
           </TouchableOpacity>
 
-          {/* 5. RECEIVE STOCK */}
           <TouchableOpacity style={styles.featureCard} onPress={() => navigation.navigate('ReceiveStock')}>
             <View style={[styles.iconBox, { backgroundColor: '#Fef9c3' }]}>
               <Ionicons name="download-outline" size={28} color="#a16207" />
@@ -177,7 +198,6 @@ export default function StoresHub({ navigation }) {
             <Text style={styles.cardDesc}>Inward materials from vendors using QR scanning.</Text>
           </TouchableOpacity>
 
-          {/* 6. ALLOCATION HISTORY */}
           <TouchableOpacity style={styles.featureCard} onPress={() => navigation.navigate('AllocationHistory')}>
             <View style={[styles.iconBox, { backgroundColor: '#F1F5F9' }]}>
               <Ionicons name="share-social-outline" size={28} color="#334155" />
@@ -186,7 +206,6 @@ export default function StoresHub({ navigation }) {
             <Text style={styles.cardDesc}>Track assets distributed to CIT labs/COEs.</Text>
           </TouchableOpacity>
 
-          {/* 7. DAMAGE REPORT */}
           <TouchableOpacity style={styles.featureCard} onPress={() => navigation.navigate('DisposalManagement')}>
             <View style={[styles.iconBox, { backgroundColor: '#FEF2F2' }]}>
               <Ionicons name="trash-outline" size={28} color="#EF4444" />
@@ -198,7 +217,6 @@ export default function StoresHub({ navigation }) {
             <Text style={styles.cardDesc}>Process write-offs for damaged CIT assets.</Text>
           </TouchableOpacity>
 
-          {/* 8. RECEIPT HISTORY */}
           <TouchableOpacity style={styles.featureCard} onPress={() => navigation.navigate('ReceiptHistory')}>
             <View style={[styles.iconBox, { backgroundColor: '#FFEDD5' }]}>
               <Ionicons name="receipt-outline" size={28} color="#C2410C" />
@@ -208,7 +226,6 @@ export default function StoresHub({ navigation }) {
           </TouchableOpacity>
         </View>
 
-        {/* ADDED COPYRIGHT FOOTER */}
         <View style={styles.footerContainer}>
             <Text style={styles.tagline}>Intelligent Resource & Ledger Management</Text>
             <Text style={styles.copyrightText}>
@@ -232,7 +249,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF', 
     borderBottomWidth: 1, 
     borderBottomColor: '#E2E8F0', 
-    elevation: 4
+    elevation: 4,
+    paddingTop: 50
   },
   brandContainer: { flexDirection: 'row', alignItems: 'center' },
   citLogo: { width: 40, height: 40, marginRight: 12 },
@@ -245,7 +263,7 @@ const styles = StyleSheet.create({
   welcomeText: { fontSize: 22, fontWeight: '800', color: '#1E293B' },
   dateText: { fontSize: 14, color: '#64748B', marginBottom: 20 },
   
-  dangerZone: { marginBottom: 30, backgroundColor: '#7F1D1D', borderRadius: 20, padding: 15, elevation: 8 },
+  dangerZone: { marginBottom: 30, backgroundColor: '#7F1D1D', borderRadius: 24, padding: 18, elevation: 8 },
   dangerHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 15 },
   dangerTitle: { fontSize: 13, fontWeight: '900', color: '#FFF', letterSpacing: 1.5, marginLeft: 8 },
   alertScroll: { paddingBottom: 5 },
@@ -259,14 +277,13 @@ const styles = StyleSheet.create({
   reorderText: { color: '#FFF', fontSize: 11, fontWeight: '800', letterSpacing: 0.5 },
 
   grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
-  featureCard: { width: '48%', backgroundColor: '#FFFFFF', borderRadius: 16, padding: 20, marginBottom: 16, borderWidth: 1, borderColor: '#E2E8F0', elevation: 3 },
+  featureCard: { width: '48%', backgroundColor: '#FFFFFF', borderRadius: 20, padding: 20, marginBottom: 16, borderWidth: 1, borderColor: '#E2E8F0', elevation: 3 },
   iconBox: { width: 56, height: 56, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginBottom: 16 },
   badgeCount: { position: 'absolute', top: -5, right: -5, backgroundColor: '#EF4444', borderRadius: 10, minWidth: 20, padding: 4, alignItems: 'center', borderWidth: 2, borderColor: '#FFF' },
   badgeCountText: { color: 'white', fontSize: 10, fontWeight: 'bold' },
   cardTitle: { color: '#0F172A', fontSize: 16, fontWeight: '700', marginBottom: 8 },
   cardDesc: { color: '#64748B', fontSize: 12, lineHeight: 18 },
 
-  // FOOTER STYLES
   footerContainer: {
     marginTop: 30,
     marginBottom: 20,
@@ -291,4 +308,4 @@ const styles = StyleSheet.create({
     marginTop: 2,
     fontWeight: '500'
   }
-});
+}); 

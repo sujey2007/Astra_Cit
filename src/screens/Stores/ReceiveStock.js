@@ -10,18 +10,19 @@ import {
   Dimensions,
   Alert,
   ActivityIndicator,
-  Image
+  Image,
+  Modal
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 
-// Database Imports
+// Database & Blockchain Utility Imports
 import { db } from '../../api/firebaseConfig';
-import { collection, addDoc, serverTimestamp, doc, updateDoc, getDocs, query, where } from 'firebase/firestore';
+import { collection, serverTimestamp, doc, updateDoc, getDocs, query, where } from 'firebase/firestore';
+import { secureAddDoc } from '../../api/blockchainUtils'; // BLOCKCHAIN INTEGRATION
 
 const { width } = Dimensions.get('window');
 
-// CIT SPECIFIC DEPARTMENTS
 const CIT_DEPARTMENTS = [
   "Computer Science & Engineering (CSE)",
   "Information Technology (IT)",
@@ -51,8 +52,9 @@ export default function ReceiveStock({ navigation }) {
   const [department, setDepartment] = useState("");
   const [targetLocation, setTargetLocation] = useState("");
   
-  // Dropdown State
+  // Dropdown & UI States
   const [isDeptDropdownVisible, setIsDeptDropdownVisible] = useState(false);
+  const [showBlockchainModal, setShowBlockchainModal] = useState(false);
   
   const [permission, requestPermission] = useCameraPermissions();
   const [showCamera, setShowCamera] = useState(false);
@@ -62,7 +64,7 @@ export default function ReceiveStock({ navigation }) {
   
   const cameraRef = useRef(null);
 
-  // Verification Logic: Updates Live Inventory with Department & Lab info
+  // Verification Logic: Integrated with Secure Ledger (Blockchain)
   const handleVerify = async () => {
     if (!productName || !quantity || !department || !targetLocation) {
       Alert.alert("Required Fields", "Please enter the Product Name, Quantity, Department, and Target Location.");
@@ -76,31 +78,42 @@ export default function ReceiveStock({ navigation }) {
       const querySnapshot = await getDocs(q);
 
       const entryData = {
+        amount: 0, // Stock inward doesn't always have price, set to 0 for ledger consistency
+        category: department.trim(),
+        description: `INWARD: ${productName.trim()} qty ${quantity} for ${targetLocation}`,
+        timestamp: new Date().toISOString(),
+        // Inventory Specific Fields
         itemName: productName.trim(),
         stockCount: parseInt(quantity),
-        category: department.trim(),
         targetDepartment: department.trim(),
         targetLocation: targetLocation.trim(),
-        lastUpdated: serverTimestamp(),
         lastInvoice: invoiceNumber || "Captured Bill",
         billImage: capturedImage
       };
 
       if (!querySnapshot.empty) {
+        // Update existing item - Blockchain Seal is still created for the ledger trail
         const itemDoc = querySnapshot.docs[0];
         const newCount = parseInt(itemDoc.data().stockCount) + parseInt(quantity);
+        
+        // 1. Update the inventory stock
         await updateDoc(doc(db, 'inventory', itemDoc.id), {
           ...entryData,
-          stockCount: newCount
+          stockCount: newCount,
+          lastUpdated: serverTimestamp()
         });
+
+        // 2. Add entry to the secure blockchain ledger for tracking
+        await secureAddDoc("institutional_ledger", entryData);
+
       } else {
-        await addDoc(inventoryRef, {
-          ...entryData,
-          createdAt: serverTimestamp()
-        });
+        // NEW ITEM: Add via Secure Blockchain Utility
+        await secureAddDoc("inventory", entryData);
+        await secureAddDoc("institutional_ledger", entryData);
       }
 
-      Alert.alert("Stock Received", `${productName} has been allocated for ${targetLocation} (${department}).`);
+      // Show Blockchain Success Popup
+      setShowBlockchainModal(true);
       
       // Reset Form
       setInvoiceNumber("");
@@ -110,7 +123,8 @@ export default function ReceiveStock({ navigation }) {
       setTargetLocation("");
       setCapturedImage(null);
     } catch (error) {
-      Alert.alert("Database Error", "Failed to update inventory.");
+      console.log(error);
+      Alert.alert("Database Error", "Failed to update secure inventory.");
     } finally {
       setIsVerifying(false);
     }
@@ -118,7 +132,7 @@ export default function ReceiveStock({ navigation }) {
 
   const openCamera = async (mode) => {
     setCameraMode(mode);
-    if (!permission.granted) {
+    if (!permission || !permission.granted) {
       const { granted } = await requestPermission();
       if (!granted) {
         Alert.alert("Permission Denied", "Camera access is required.");
@@ -175,6 +189,27 @@ export default function ReceiveStock({ navigation }) {
 
   return (
     <SafeAreaView style={styles.container}>
+      
+      {/* BLOCKCHAIN SUCCESS POPUP */}
+      <Modal visible={showBlockchainModal} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+            <View style={styles.blockchainModal}>
+                <View style={styles.lottieMock}>
+                    <Ionicons name="shield-checkmark" size={60} color="#10B981" />
+                    <View style={styles.chainLinkVisual} />
+                    <Ionicons name="link" size={30} color="#3B82F6" />
+                </View>
+                <Text style={styles.modalTitle}>SECURE ENTRY CREATED</Text>
+                <Text style={styles.modalDesc}>
+                    This transaction has been cryptographically signed with <Text style={{fontWeight:'900'}}>SHA-256</Text> and added to the immutable ledger.
+                </Text>
+                <TouchableOpacity style={styles.modalBtn} onPress={() => setShowBlockchainModal(false)}>
+                    <Text style={styles.modalBtnText}>VIEW ON DASHBOARD</Text>
+                </TouchableOpacity>
+            </View>
+        </View>
+      </Modal>
+
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="chevron-back" size={24} color="#1E293B" />
@@ -311,7 +346,7 @@ export default function ReceiveStock({ navigation }) {
         <View style={styles.infoBox}>
           <Ionicons name="shield-checkmark" size={20} color="#2563EB" />
           <Text style={styles.infoText}>
-            Updating inventory ensures <Text style={{fontWeight:'700'}}>Live Tracker</Text> accuracy for Department HODs.
+            Updating inventory ensures <Text style={{fontWeight:'700'}}>Blockchain Ledger</Text> accuracy for Auditors.
           </Text>
         </View>
       </ScrollView>
@@ -346,7 +381,7 @@ const styles = StyleSheet.create({
   inputIcon: { marginRight: 10 },
   input: { flex: 1, fontSize: 14, fontWeight: '600', color: '#1E293B' },
   
-  // Dropdown specific styles
+  // Dropdown
   inputGroup: { position: 'relative' },
   dropdownValue: { flex: 1, fontSize: 14, fontWeight: '600', color: '#1E293B' },
   dropdownListContainer: { 
@@ -360,6 +395,17 @@ const styles = StyleSheet.create({
   verifyBtn: { backgroundColor: '#2563EB', paddingVertical: 16, borderRadius: 12, alignItems: 'center', marginTop: 10 },
   btnDisabled: { backgroundColor: '#94A3B8' },
   verifyText: { color: '#FFF', fontWeight: '800', fontSize: 13, letterSpacing: 1 },
+  
+  // POPUP STYLES
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center' },
+  blockchainModal: { width: width * 0.85, backgroundColor: '#FFF', borderRadius: 30, padding: 30, alignItems: 'center', elevation: 20 },
+  lottieMock: { alignItems: 'center', marginBottom: 20 },
+  chainLinkVisual: { height: 15, width: 2, backgroundColor: '#E2E8F0', marginVertical: 5 },
+  modalTitle: { fontSize: 18, fontWeight: '900', color: '#1E293B', textAlign: 'center', marginBottom: 10 },
+  modalDesc: { fontSize: 13, color: '#64748B', textAlign: 'center', lineHeight: 20, marginBottom: 25 },
+  modalBtn: { backgroundColor: '#0F172A', paddingVertical: 15, paddingHorizontal: 30, borderRadius: 15, width: '100%', alignItems: 'center' },
+  modalBtnText: { color: '#FFF', fontWeight: '900', fontSize: 12, letterSpacing: 1 },
+
   infoBox: { flexDirection: 'row', alignItems: 'center', marginTop: 20, paddingHorizontal: 10, paddingBottom: 20 },
   infoText: { flex: 1, fontSize: 12, color: '#475569', marginLeft: 10, lineHeight: 18 }
 });
