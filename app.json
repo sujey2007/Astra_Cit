@@ -1,8 +1,8 @@
 {
   "expo": {
     "name": "AstraCIT",
-    "slug": "AstraCIT",
-    "version": "1.0.1",
+    "slug": "astracit",
+    "version": "1.0.3",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -20,7 +20,7 @@
     },
     "android": {
       "package": "com.sujey.astracit",
-      "versionCode": 2,
+      "versionCode": 3,
       "adaptiveIcon": {
         "backgroundColor": "#0F172A",
         "foregroundImage": "./assets/android-icon-foreground.png"
@@ -29,13 +29,7 @@
         "CAMERA",
         "WRITE_EXTERNAL_STORAGE",
         "READ_EXTERNAL_STORAGE",
-        "android.permission.CAMERA",
-        "android.permission.RECORD_AUDIO",
-        "CAMERA",
-        "WRITE_EXTERNAL_STORAGE",
-        "READ_EXTERNAL_STORAGE",
-        "android.permission.CAMERA",
-        "android.permission.RECORD_AUDIO"
+        "RECORD_AUDIO"
       ]
     },
     "web": {
@@ -53,14 +47,9 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "4f543d41-60c6-4cb4-986e-f86af8efe62c"
+        "projectId": "d5c40b52-0c14-41cb-ae35-b305bd2dc060"
       }
     },
-    "runtimeVersion": {
-      "policy": "appVersion"
-    },
-    "updates": {
-      "url": "https://u.expo.dev/4f543d41-60c6-4cb4-986e-f86af8efe62c"
-    }
+    "owner": "hackhive"
   }
 }
