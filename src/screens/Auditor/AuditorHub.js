@@ -23,6 +23,17 @@ export default function AuditorHub({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
 
+  // Helper function to safely handle Firebase Timestamps
+  const formatTimestamp = (timestamp) => {
+    if (!timestamp) return 'N/A';
+    // Check if it's a Firebase Timestamp object
+    if (typeof timestamp.toDate === 'function') {
+      return timestamp.toDate().toLocaleString();
+    }
+    // Fallback if it's already a Date object or string
+    return new Date(timestamp).toLocaleString();
+  };
+
   useEffect(() => {
     setLoading(true);
     let q;
@@ -54,14 +65,21 @@ export default function AuditorHub({ navigation }) {
 
     setIsExporting(true);
     try {
-      const tableRows = data.map(item => `
+      const tableRows = data.map(item => {
+        // Safe date parsing for PDF
+        const rawDate = item.timestamp || item.orderedAt;
+        const dateString = rawDate && typeof rawDate.toDate === 'function' 
+          ? rawDate.toDate().toLocaleDateString() 
+          : rawDate ? new Date(rawDate).toLocaleDateString() : 'N/A';
+
+        return `
         <tr>
           <td style="padding: 10px; border: 1px solid #ddd;">${item.vendor || item.itemName || 'N/A'}</td>
           <td style="padding: 10px; border: 1px solid #ddd;">${item.amount ? '₹' + item.amount : (item.status || 'Pending')}</td>
-          <td style="padding: 10px; border: 1px solid #ddd;">${item.timestamp?.toDate().toLocaleDateString() || 'N/A'}</td>
+          <td style="padding: 10px; border: 1px solid #ddd;">${dateString}</td>
           <td style="padding: 10px; border: 1px solid #ddd; font-size: 8px;">${item.id}</td>
         </tr>
-      `).join('');
+      `}).join('');
 
       const htmlContent = `
         <html>
@@ -105,6 +123,9 @@ export default function AuditorHub({ navigation }) {
   };
 
   const renderAuditItem = ({ item }) => {
+    // FIX: Safely determine which timestamp field to use based on the tab
+    const displayTimestamp = item.timestamp || item.orderedAt;
+
     if (activeTab === 'Finances') {
       return (
         <View style={styles.auditCard}>
@@ -112,7 +133,7 @@ export default function AuditorHub({ navigation }) {
           <View style={styles.cardContent}>
             <Text style={styles.vendorName}>{item.vendor || item.category}</Text>
             <Text style={styles.subText}>Txn ID: {item.id.substring(0,10)}</Text>
-            <Text style={styles.date}>{item.timestamp?.toDate().toLocaleString()}</Text>
+            <Text style={styles.date}>{formatTimestamp(displayTimestamp)}</Text>
           </View>
           <Text style={styles.amount}>₹{item.amount?.toLocaleString()}</Text>
         </View>
@@ -125,6 +146,7 @@ export default function AuditorHub({ navigation }) {
         <View style={styles.cardContent}>
           <Text style={styles.vendorName}>{item.vendorName || item.itemName || 'Contractor'}</Text>
           <Text style={styles.subText}>{item.status || item.paymentStatus} • {item.requestedBy || item.manager}</Text>
+          <Text style={styles.date}>{formatTimestamp(displayTimestamp)}</Text>
         </View>
         <Ionicons name="shield-checkmark" size={20} color="#6366F1" />
       </View>
@@ -135,7 +157,6 @@ export default function AuditorHub({ navigation }) {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <View style={styles.brandContainer}>
-          {/* FIXED: Using local asset logo */}
           <Image 
             source={require('../../../assets/logo.png')} 
             style={styles.citLogo} 
@@ -199,7 +220,7 @@ export default function AuditorHub({ navigation }) {
             <View style={styles.footerContainer}>
                 <Text style={styles.tagline}>Intelligent Resource & Ledger Management</Text>
                 <Text style={styles.copyrightText}>
-                    © 2026 AstraCIT • Developed by <Text style={{fontWeight: '900', color: '#6366F1'}}>CodeTitans</Text>
+                  © 2026 AstraCIT • Developed by <Text style={{fontWeight: '900', color: '#6366F1'}}>CodeTitans</Text>
                 </Text>
                 <Text style={styles.rightsText}>All Rights Reserved</Text>
             </View>
@@ -279,8 +300,6 @@ const styles = StyleSheet.create({
     gap: 12
   },
   scanFabText: { color: '#FFF', fontWeight: '900', fontSize: 14, letterSpacing: 1.2 },
-  
-  // FOOTER STYLES
   footerContainer: {
     marginTop: 30,
     alignItems: 'center',
