@@ -8,6 +8,16 @@ export default function TransactionLedger({ navigation }) {
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Helper function to handle both Firebase Timestamps and Mock Data Dates safely
+  const safeToDate = (timestamp) => {
+    if (!timestamp) return new Date();
+    if (typeof timestamp.toDate === 'function') {
+      return timestamp.toDate();
+    }
+    // Handle cases where timestamp might be a JS Date or a numeric value
+    return new Date(timestamp.seconds * 1000 || timestamp);
+  };
+
   // MOCK DATA FOR INITIAL VIEW (Will be merged with live data)
   const mockTransactions = [
     { id: 'm1', type: 'Debit', category: 'Payroll', description: 'Construction Labor Wages', amount: 4800, timestamp: { toDate: () => new Date('2026-03-08T10:00:00') } },
@@ -23,8 +33,8 @@ export default function TransactionLedger({ navigation }) {
       
       // Combine Mock and Live data, then sort locally to prevent indexing delays
       const combined = [...liveData, ...mockTransactions].sort((a, b) => {
-        const timeA = a.timestamp?.seconds || a.timestamp?.toDate()?.getTime() || 0;
-        const timeB = b.timestamp?.seconds || b.timestamp?.toDate()?.getTime() || 0;
+        const timeA = safeToDate(a.timestamp).getTime();
+        const timeB = safeToDate(b.timestamp).getTime();
         return timeB - timeA;
       });
 
@@ -32,6 +42,8 @@ export default function TransactionLedger({ navigation }) {
       setLoading(false);
     }, (error) => {
       console.error("Ledger Sync Error:", error);
+      // Fallback to mock data if there is an internet/Firestore connection error
+      setTransactions(mockTransactions);
       setLoading(false);
     });
 
@@ -72,7 +84,7 @@ export default function TransactionLedger({ navigation }) {
                   {item.description || item.vendor || 'Unknown Entry'}
                 </Text>
                 <Text style={styles.date}>
-                  {item.timestamp?.toDate().toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })} • {item.category}
+                  {safeToDate(item.timestamp).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })} • {item.category}
                 </Text>
               </View>
               <Text style={[
